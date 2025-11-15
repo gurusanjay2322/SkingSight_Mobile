@@ -4,7 +4,7 @@ import { AnalyzeResponse } from '../types';
 // Backend URL - for physical devices, use your computer's local IP (e.g., http://192.168.1.100:5000)
 // For Android emulator, use http://10.0.2.2:5000
 // For iOS simulator, use http://localhost:5000
-const BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://25d5f8e50d8b.ngrok-free.app/api';
+const BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://063287cb1a90.ngrok-free.app/api';
 
 class ApiService {
   private client: AxiosInstance;
