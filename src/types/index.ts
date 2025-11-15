@@ -18,6 +18,13 @@ export interface AnalyzeResponse {
   weather: WeatherData;
 }
 
+export interface ValidateSkinResponse {
+  human_ratio: number;
+  message: string;
+  skin_ratio: number;
+  valid: boolean;
+}
+
 // Navigation Types
 export type RootStackParamList = {
   Home: undefined;

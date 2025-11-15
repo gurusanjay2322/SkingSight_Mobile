@@ -12,6 +12,7 @@ import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
 import { Ionicons } from '@expo/vector-icons';
+import { apiService } from '../services/api';
 
 type CameraScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Camera'>;
 
@@ -42,7 +43,43 @@ export const CameraScreen: React.FC<Props> = ({ navigation }) => {
       });
 
       if (photo?.uri) {
-        navigation.navigate('Preview', { imageUri: photo.uri });
+        // Validate the captured image
+        try {
+          const validationResponse = await apiService.validateSkin(photo.uri);
+          
+          if (validationResponse.valid) {
+            // Image is valid, navigate to preview screen
+            navigation.navigate('Preview', { imageUri: photo.uri });
+          } else {
+            // Image is not valid, prompt user to recapture
+            Alert.alert(
+              'Invalid Photo',
+              validationResponse.message || 'Please ensure your face is clearly visible and well-positioned within the frame. Try capturing again.',
+              [
+                {
+                  text: 'Retake',
+                  style: 'default',
+                },
+              ]
+            );
+          }
+        } catch (validationError) {
+          console.error('Error validating skin:', validationError);
+          Alert.alert(
+            'Validation Error',
+            'Unable to validate the image. Please try again.',
+            [
+              {
+                text: 'Retry',
+                onPress: handleCapture,
+              },
+              {
+                text: 'Cancel',
+                style: 'cancel',
+              },
+            ]
+          );
+        }
       }
     } catch (error) {
       console.error('Error capturing photo:', error);

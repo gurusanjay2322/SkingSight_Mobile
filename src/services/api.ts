@@ -1,10 +1,10 @@
 import axios, { AxiosInstance } from 'axios';
-import { AnalyzeResponse } from '../types';
+import { AnalyzeResponse, ValidateSkinResponse } from '../types';
 
 // Backend URL - for physical devices, use your computer's local IP (e.g., http://192.168.1.100:5000)
 // For Android emulator, use http://10.0.2.2:5000
 // For iOS simulator, use http://localhost:5000
-const BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://063287cb1a90.ngrok-free.app/api';
+const BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://6b74ea17ff9e.ngrok-free.app/api';
 
 class ApiService {
   private client: AxiosInstance;
@@ -14,6 +14,44 @@ class ApiService {
       baseURL: BASE_URL,
       timeout: 30000,
     });
+  }
+
+  async validateSkin(imageUri: string): Promise<ValidateSkinResponse> {
+    try {
+      const formData = new FormData();
+  
+      const filename = imageUri.split('/').pop() || 'photo.jpg';
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : 'image/jpeg';
+  
+      formData.append('image', {
+        uri: imageUri,
+        name: filename,
+        type: type,
+      } as any);
+  
+      console.log('Validating skin with FormData');
+  
+      const response = await this.client.post<ValidateSkinResponse>(
+        '/validSkin',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Accept': 'application/json',
+          },
+        }
+      );
+      console.log('Validation Response:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('Validation API Error:', error);
+      if (axios.isAxiosError(error)) {
+        console.log('Axios full error:', JSON.stringify(error, null, 2));
+        throw error;
+      }
+      throw error;
+    }
   }
 
   async analyzeSkin(imageUri: string, latitude: number, longitude: number): Promise<AnalyzeResponse> {
