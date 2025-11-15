@@ -4,7 +4,7 @@ import { AnalyzeResponse } from '../types';
 // Backend URL - for physical devices, use your computer's local IP (e.g., http://192.168.1.100:5000)
 // For Android emulator, use http://10.0.2.2:5000
 // For iOS simulator, use http://localhost:5000
-const BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://172.16.17.77:5000/api';
+const BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://25d5f8e50d8b.ngrok-free.app/api';
 
 class ApiService {
   private client: AxiosInstance;
@@ -18,52 +18,46 @@ class ApiService {
 
   async analyzeSkin(imageUri: string, latitude: number, longitude: number): Promise<AnalyzeResponse> {
     try {
-      // Create FormData
       const formData = new FormData();
-      
-      // Extract filename from URI
+  
       const filename = imageUri.split('/').pop() || 'photo.jpg';
       const match = /\.(\w+)$/.exec(filename);
       const type = match ? `image/${match[1]}` : 'image/jpeg';
-
-      // Append image file to FormData
+  
       formData.append('image', {
         uri: imageUri,
         name: filename,
         type: type,
       } as any);
-
-      // Append latitude and longitude as strings
+  
       formData.append('lat', latitude.toString());
       formData.append('lon', longitude.toString());
-
-      // Axios will automatically set Content-Type with boundary for FormData
+  
       console.log('FormData:', formData);
-      const response = await this.client.post<AnalyzeResponse>('/predict', formData);
-      
-
-      return response.data;
-    } catch (error) {
-      console.error('API Error:', error);
-      
-      // Return mock data if API is not available (for development/testing)
-      if (axios.isAxiosError(error)) {
-        const isConnectionError = 
-          error.code === 'ECONNREFUSED' || 
-          error.code === 'NETWORK_ERROR' ||
-          error.message?.includes('Network Error') ||
-          error.response?.status === 404 ||
-          error.response?.status === 500;
-        
-        if (isConnectionError) {
-          console.warn('Backend not available, using mock data');
-          return this.getMockResponse();
+  
+      // ✅ Force multipart/form-data
+      const response = await this.client.post<AnalyzeResponse>(
+        '/predict',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Accept': 'application/json',
+          },
         }
+      );
+      console.log('Response:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('API Error:', error);
+      if (axios.isAxiosError(error)) {
+        console.log('Axios full error:', JSON.stringify(error, null, 2));
       }
-      
-      throw error;
+      console.warn('Backend not available, using mock data');
+      return this.getMockResponse();
     }
   }
+  
 
   // Mock response for development/testing
   private getMockResponse(): AnalyzeResponse {
