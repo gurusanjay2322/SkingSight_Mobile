@@ -120,7 +120,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.title}>GlowScan</Text>
+          <Text style={styles.title}>Skin Sight</Text>
           <Text style={styles.subtitle}>
             Analyze your skin and get personalized recommendations based on
             environmental factors
