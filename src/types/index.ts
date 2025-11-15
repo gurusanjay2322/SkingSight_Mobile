@@ -30,8 +30,11 @@ export type RootStackParamList = {
   Home: undefined;
   Camera: undefined;
   Preview: { imageUri: string };
-  Results: { data: AnalyzeResponse };
+  Results: { data: AnalyzeResponse; imageUri?: string , fromHistory? : boolean };
   History: undefined;
+  Login: undefined;
+  SignUp: undefined;
+  Profile: undefined;
 };
 
 // History Item Type
