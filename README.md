@@ -42,7 +42,7 @@ A React Native mobile application that uses AI to analyze skin conditions and pr
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/gurusanjay2322/SkingSight_Mobile
    cd skinsight_mobile
    ```
 
