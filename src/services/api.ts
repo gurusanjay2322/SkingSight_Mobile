@@ -18,10 +18,8 @@ class ApiService {
 
   async analyzeSkin(imageUri: string, latitude: number, longitude: number): Promise<AnalyzeResponse> {
     try {
-      // Create FormData
       const formData = new FormData();
-      
-      // Extract filename from URI
+  
       const filename = imageUri.split('/').pop() || 'photo.jpg';
       const match = /\.(\w+)$/.exec(filename.toLowerCase());
       // Map common extensions to MIME types
@@ -37,13 +35,15 @@ class ApiService {
 
       // Append image file to FormData - React Native/Expo format
       // The object structure {uri, name, type} is required for React Native
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : 'image/jpeg';
+  
       formData.append('image', {
         uri: imageUri,
         name: filename,
         type: type,
       } as any);
-
-      // Append latitude and longitude as strings
+  
       formData.append('lat', latitude.toString());
       formData.append('lon', longitude.toString());
 
@@ -52,8 +52,23 @@ class ApiService {
       const response = await this.client.post<AnalyzeResponse>('/predict', formData);
       
 
+  
+      console.log('FormData:', formData);
+  
+      // ✅ Force multipart/form-data
+      const response = await this.client.post<AnalyzeResponse>(
+        '/predict',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Accept': 'application/json',
+          },
+        }
+      );
+      console.log('Response:', response.data);
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('API Error:', error);
       
       // Log detailed error information
@@ -83,6 +98,13 @@ class ApiService {
       throw error;
     }
   }
+        console.log('Axios full error:', JSON.stringify(error, null, 2));
+      }
+      console.warn('Backend not available, using mock data');
+      return this.getMockResponse();
+    }
+  }
+  
 
   // Mock response for development/testing
   private getMockResponse(): AnalyzeResponse {
