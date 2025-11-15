@@ -13,7 +13,10 @@ import {
 } from "react-native";
 import { InfoCard } from "../components/InfoCard";
 import { PrimaryButton } from "../components/PrimaryButton";
+import { useAuth } from "../contexts/AuthContext";
+import { resultService } from "../services/resultService";
 import { RootStackParamList } from "../types";
+import { uploadToCloudinary } from "../utils/cloudinary";
 import {
   getAQIColor,
   getAQILabel,
@@ -21,9 +24,6 @@ import {
   getUVIndexColor,
   getUVIndexLabel,
 } from "../utils/colors";
-import { uploadToCloudinary } from "../utils/cloudinary";
-import { resultService } from "../services/resultService";
-import { useAuth } from "../contexts/AuthContext";
 
 type ResultsScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -66,6 +66,7 @@ export const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
       data?.suggestions || data?.rule_based_suggestions || [],
     genaiSuggestions:
       data?.genai_suggestions || data?.ai_suggestions || [],
+    disease: data?.disease || null,
   };
 
   const riskColor = getRiskColor(normalizedData.riskLevel);
@@ -171,6 +172,37 @@ export const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
           icon={getSkinTypeIcon(normalizedData.predictedClass || "Unknown")}
           color={riskColor}
         />
+
+        {/* Disease Detection */}
+        {normalizedData.disease && (
+          <View style={[styles.diseaseCard, { borderColor: normalizedData.disease.confidence > 0.7 ? "#EF4444" : "#F59E0B" }]}>
+            <View style={styles.diseaseHeader}>
+              <Ionicons 
+                name="medical" 
+                size={24} 
+                color={normalizedData.disease.confidence > 0.7 ? "#EF4444" : "#F59E0B"} 
+              />
+              <Text style={styles.diseaseTitle}>Detected Skin Condition</Text>
+            </View>
+            <Text style={styles.diseaseClass}>
+              {normalizedData.disease.predicted_class}
+            </Text>
+            <View style={styles.diseaseConfidence}>
+              <Text style={styles.diseaseConfidenceLabel}>Confidence:</Text>
+              <Text style={[styles.diseaseConfidenceValue, { color: normalizedData.disease.confidence > 0.7 ? "#EF4444" : "#F59E0B" }]}>
+                {normalizedData.disease.confidence_percentage}
+              </Text>
+            </View>
+            {normalizedData.disease.confidence > 0.7 && (
+              <View style={styles.diseaseWarning}>
+                <Ionicons name="warning" size={20} color="#EF4444" />
+                <Text style={styles.diseaseWarningText}>
+                  High confidence detection. Please consult a dermatologist.
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
 
         {/* UV Index */}
         <InfoCard
@@ -371,4 +403,65 @@ const styles = StyleSheet.create({
     borderTopColor: "#E5E7EB",
   },
   footerButton: { marginBottom: 12 },
+  diseaseCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  diseaseHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+    gap: 8,
+  },
+  diseaseTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#6B7280",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  diseaseClass: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 8,
+  },
+  diseaseConfidence: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  diseaseConfidenceLabel: {
+    fontSize: 14,
+    color: "#6B7280",
+    fontWeight: "500",
+  },
+  diseaseConfidenceValue: {
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  diseaseWarning: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    backgroundColor: "#FEF2F2",
+    padding: 12,
+    borderRadius: 8,
+    gap: 8,
+    marginTop: 8,
+  },
+  diseaseWarningText: {
+    flex: 1,
+    fontSize: 13,
+    color: "#991B1B",
+    lineHeight: 18,
+  },
 });
