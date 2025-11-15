@@ -1,22 +1,23 @@
+import { Ionicons } from '@expo/vector-icons';
+import { RouteProp } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  Image,
-  TouchableOpacity,
   Alert,
+  Image,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RouteProp } from '@react-navigation/native';
-import { RootStackParamList } from '../types';
-import { PrimaryButton } from '../components/PrimaryButton';
 import { Loader } from '../components/Loader';
+import { PrimaryButton } from '../components/PrimaryButton';
+import { useAuth } from '../contexts/AuthContext';
 import { apiService } from '../services/api';
-import { storageService } from '../utils/storage';
+import { RootStackParamList } from '../types';
 import { locationService } from '../utils/location';
-import { Ionicons } from '@expo/vector-icons';
+import { storageService } from '../utils/storage';
 
 type PreviewScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Preview'>;
 type PreviewScreenRouteProp = RouteProp<RootStackParamList, 'Preview'>;
@@ -29,6 +30,7 @@ interface Props {
 export const PreviewScreen: React.FC<Props> = ({ navigation, route }) => {
   const { imageUri } = route.params;
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const { user } = useAuth();
 
   const handleAnalyze = async () => {
     try {
@@ -54,19 +56,22 @@ export const PreviewScreen: React.FC<Props> = ({ navigation, route }) => {
 
       const response = await apiService.analyzeSkin(imageUri, latitude, longitude);
 
-      // Save to history
-      const historyItem = {
-        id: Date.now().toString(),
-        timestamp: Date.now(),
-        predicted_class: response.predicted_class,
-        risk_level: response.risk_level,
-        confidence: response.confidence,
-        imageUri: imageUri,
-        data: response,
-      };
-      await storageService.saveHistoryItem(historyItem);
+      // Save to history (only if user is logged in, otherwise data won't be saved)
+      if (user) {
+        const historyItem = {
+          id: Date.now().toString(),
+          timestamp: Date.now(),
+          predicted_class: response.predicted_class,
+          risk_level: response.risk_level,
+          confidence: response.confidence,
+          imageUri: imageUri,
+          data: response,
+        };
+        await storageService.saveHistoryItem(historyItem, user.uid);
+      }
 
-      navigation.navigate('Results', { data: response });
+      navigation.navigate('Results', { data: response, imageUri });
+
     } catch (error) {
       console.error('Analysis error:', error);
       Alert.alert(

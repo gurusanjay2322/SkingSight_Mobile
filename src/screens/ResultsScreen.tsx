@@ -1,28 +1,35 @@
-import { Ionicons } from '@expo/vector-icons';
-import { RouteProp } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React from 'react';
+import { Ionicons } from "@expo/vector-icons";
+import { RouteProp } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import React from "react";
 import {
+  Alert,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-} from 'react-native';
-import { InfoCard } from '../components/InfoCard';
-import { PrimaryButton } from '../components/PrimaryButton';
-import { RootStackParamList } from '../types';
+} from "react-native";
+import { InfoCard } from "../components/InfoCard";
+import { PrimaryButton } from "../components/PrimaryButton";
+import { RootStackParamList } from "../types";
 import {
   getAQIColor,
   getAQILabel,
   getRiskColor,
   getUVIndexColor,
   getUVIndexLabel,
-} from '../utils/colors';
+} from "../utils/colors";
+import { uploadToCloudinary } from "../utils/cloudinary";
+import { resultService } from "../services/resultService";
+import { useAuth } from "../contexts/AuthContext";
 
-type ResultsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Results'>;
-type ResultsScreenRouteProp = RouteProp<RootStackParamList, 'Results'>;
+type ResultsScreenNavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  "Results"
+>;
+type ResultsScreenRouteProp = RouteProp<RootStackParamList, "Results">;
 
 interface Props {
   navigation: ResultsScreenNavigationProp;
@@ -31,13 +38,13 @@ interface Props {
 
 const getSkinTypeIcon = (predictedClass: string) => {
   switch (predictedClass.toLowerCase()) {
-    case 'acne':
+    case "acne":
       return <Ionicons name="medical" size={24} color="#EF4444" />;
-    case 'dry':
+    case "dry":
       return <Ionicons name="water-outline" size={24} color="#3B82F6" />;
-    case 'oily':
+    case "oily":
       return <Ionicons name="flash" size={24} color="#F59E0B" />;
-    case 'normal':
+    case "normal":
       return <Ionicons name="checkmark-circle" size={24} color="#10B981" />;
     default:
       return <Ionicons name="body" size={24} color="#6366F1" />;
@@ -45,19 +52,83 @@ const getSkinTypeIcon = (predictedClass: string) => {
 };
 
 export const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
-  const { data } = route.params;
-  const riskColor = getRiskColor(data.risk_level);
-  const uvColor = getUVIndexColor(data.weather.uv_index);
-  const aqiColor = getAQIColor(data.weather.aqi);
+  const { data, imageUri , fromHistory } = route.params;
+  const { user } = useAuth();
 
-  const confidencePercentage = Math.round(data.confidence * 100);
+  // 🧩 Normalize structure for both Firestore + API response
+  const normalizedData = {
+    predictedClass:
+      data?.predictedClass || data?.predicted_class || "Unknown",
+    confidence: data?.confidence ?? 0,
+    riskLevel: data?.riskLevel || data?.risk_level || "Unknown",
+    weather: data?.weather || {},
+    suggestions:
+      data?.suggestions || data?.rule_based_suggestions || [],
+    genaiSuggestions:
+      data?.genai_suggestions || data?.ai_suggestions || [],
+  };
+
+  const riskColor = getRiskColor(normalizedData.riskLevel);
+  const uvColor = getUVIndexColor(normalizedData.weather.uv_index || 0);
+  const aqiColor = getAQIColor(normalizedData.weather.aqi || 0);
+  const confidencePercentage = Math.round(normalizedData.confidence * 100);
+
+  const handleSaveResult = () => {
+    if (!user) {
+      Alert.alert("Sign In Required", "Please sign in to save your results.");
+      return;
+    }
+
+    Alert.alert(
+      "Save Result",
+      "Do you want to save this image with your result?",
+      [
+        {
+          text: "No",
+          onPress: async () => {
+            await resultService.saveResult({
+              uid: user.uid,
+              predictedClass: normalizedData.predictedClass,
+              confidence: normalizedData.confidence,
+              weather: normalizedData.weather,
+              riskLevel: normalizedData.riskLevel,
+              suggestions: normalizedData.suggestions,
+            });
+            Alert.alert("Saved", "Result saved without image.");
+          },
+        },
+        {
+          text: "Yes",
+          onPress: async () => {
+            try {
+              const imageUrl = await uploadToCloudinary(imageUri);
+              await resultService.saveResult({
+                uid: user.uid,
+                predictedClass: normalizedData.predictedClass,
+                confidence: normalizedData.confidence,
+                weather: normalizedData.weather,
+                riskLevel: normalizedData.riskLevel,
+                suggestions: normalizedData.suggestions,
+                imageUrl: imageUrl ?? undefined,
+              });
+              Alert.alert("Saved", "Result and image saved successfully.");
+            } catch (err) {
+              console.error("Save error:", err);
+              Alert.alert("Error", "Failed to save result.");
+            }
+          },
+        },
+        { text: "Cancel", style: "cancel" },
+      ]
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => navigation.navigate('Home')}
+          onPress={() => navigation.navigate("Home")}
         >
           <Ionicons name="arrow-back" size={24} color="#111827" />
         </TouchableOpacity>
@@ -70,12 +141,14 @@ export const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Risk Level Card */}
+        {/* Risk Card */}
         <View style={[styles.riskCard, { borderColor: riskColor }]}>
           <View style={styles.riskHeader}>
             <Text style={styles.riskLabel}>Risk Level</Text>
             <View style={[styles.riskBadge, { backgroundColor: riskColor }]}>
-              <Text style={styles.riskBadgeText}>{data.risk_level}</Text>
+              <Text style={styles.riskBadgeText}>
+                {normalizedData.riskLevel}
+              </Text>
             </View>
           </View>
           <View style={styles.confidenceContainer}>
@@ -86,19 +159,24 @@ export const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
           </View>
         </View>
 
-        {/* Skin Type */}
+        {/* Skin Condition */}
         <InfoCard
           title="Skin Condition"
-          value={data.predicted_class.charAt(0).toUpperCase() + data.predicted_class.slice(1)}
-          icon={getSkinTypeIcon(data.predicted_class)}
+          value={
+            typeof normalizedData.predictedClass === "string"
+              ? normalizedData.predictedClass.charAt(0).toUpperCase() +
+                normalizedData.predictedClass.slice(1)
+              : "Unknown"
+          }
+          icon={getSkinTypeIcon(normalizedData.predictedClass || "Unknown")}
           color={riskColor}
         />
 
         {/* UV Index */}
         <InfoCard
           title="UV Index"
-          value={data.weather.uv_index.toFixed(1)}
-          subtitle={getUVIndexLabel(data.weather.uv_index)}
+          value={(normalizedData.weather.uv_index || 0).toFixed(1)}
+          subtitle={getUVIndexLabel(normalizedData.weather.uv_index || 0)}
           color={uvColor}
           icon={<Ionicons name="sunny" size={24} color={uvColor} />}
         />
@@ -106,8 +184,8 @@ export const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
         {/* AQI */}
         <InfoCard
           title="Air Quality Index"
-          value={data.weather.aqi}
-          subtitle={getAQILabel(data.weather.aqi)}
+          value={normalizedData.weather.aqi || 0}
+          subtitle={getAQILabel(normalizedData.weather.aqi || 0)}
           color={aqiColor}
           icon={<Ionicons name="cloud" size={24} color={aqiColor} />}
         />
@@ -115,35 +193,36 @@ export const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
         {/* Weather Info */}
         <View style={styles.weatherCard}>
           <Text style={styles.weatherCardTitle}>Weather Information</Text>
-          
-          {/* City Location */}
+
           <View style={styles.weatherItem}>
             <Ionicons name="location" size={20} color="#6B7280" />
-            <Text style={styles.weatherItemText}>{data.weather.city}</Text>
+            <Text style={styles.weatherItemText}>
+              {normalizedData.weather.city || "Unknown"}
+            </Text>
           </View>
-          
-          {/* Temperature */}
+
           <View style={styles.weatherItem}>
             <Ionicons name="thermometer" size={20} color="#6B7280" />
             <Text style={styles.weatherItemText}>
-              {data.weather.temp_min.toFixed(1)}°C - {data.weather.temp_max.toFixed(1)}°C
+              {(normalizedData.weather.temp_min ?? 0).toFixed(1)}°C -{" "}
+              {(normalizedData.weather.temp_max ?? 0).toFixed(1)}°C
             </Text>
           </View>
-          
-          {/* Dominant Pollutant */}
+
           <View style={styles.weatherItem}>
             <Ionicons name="warning" size={20} color="#F59E0B" />
             <Text style={styles.weatherItemText}>
-              Dominant Pollutant: {data.weather.dominant_pollutant.toUpperCase()}
+              Dominant Pollutant:{" "}
+              {(normalizedData.weather.dominant_pollutant || "N/A").toUpperCase()}
             </Text>
           </View>
         </View>
 
-        {/* Recommendations */}
-        {data.rule_based_suggestions.length > 0 && (
+        {/* Rule-based Suggestions */}
+        {normalizedData.suggestions.length > 0 && (
           <View style={styles.recommendationsCard}>
             <Text style={styles.recommendationsTitle}>Recommendations</Text>
-            {data.rule_based_suggestions.map((suggestion, index) => (
+            {normalizedData.suggestions.map((suggestion, index) => (
               <View key={index} style={styles.recommendationItem}>
                 <Ionicons name="checkmark-circle" size={20} color="#10B981" />
                 <Text style={styles.recommendationText}>{suggestion}</Text>
@@ -153,10 +232,10 @@ export const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
         )}
 
         {/* GenAI Suggestions */}
-        {data.genai_suggestions && data.genai_suggestions.length > 0 && (
+        {normalizedData.genaiSuggestions.length > 0 && (
           <View style={styles.recommendationsCard}>
             <Text style={styles.recommendationsTitle}>AI Suggestions</Text>
-            {data.genai_suggestions.map((suggestion, index) => (
+            {normalizedData.genaiSuggestions.map((suggestion, index) => (
               <View key={index} style={styles.recommendationItem}>
                 <Ionicons name="sparkles" size={20} color="#6366F1" />
                 <Text style={styles.recommendationText}>{suggestion}</Text>
@@ -167,80 +246,60 @@ export const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
       </ScrollView>
 
       <View style={styles.footer}>
+        {!fromHistory && <PrimaryButton
+          title="Save Result"
+          onPress={handleSaveResult}
+          style={[styles.footerButton, { backgroundColor: "#6366F1" }]}
+        />}
         <PrimaryButton
           title="New Analysis"
-          onPress={() => navigation.navigate('Home')}
+          onPress={() => navigation.navigate("Home")}
           style={styles.footerButton}
         />
-        <TouchableOpacity
-          style={styles.historyButton}
-          onPress={() => navigation.navigate('History')}
-        >
-          <Ionicons name="time-outline" size={20} color="#6366F1" />
-          <Text style={styles.historyButtonText}>View History</Text>
-        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
+  container: { flex: 1, backgroundColor: "#F9FAFB" },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     padding: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFF",
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: "#E5E7EB",
   },
-  backButton: {
-    padding: 8,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  placeholder: {
-    width: 40,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 16,
-  },
+  backButton: { padding: 8 },
+  headerTitle: { fontSize: 18, fontWeight: "600", color: "#111827" },
+  placeholder: { width: 40 },
+  scrollView: { flex: 1 },
+  scrollContent: { padding: 16 },
   riskCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
     borderWidth: 2,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 5,
   },
   riskHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 16,
   },
   riskLabel: {
     fontSize: 14,
-    color: '#6B7280',
-    fontWeight: '600',
-    textTransform: 'uppercase',
+    color: "#6B7280",
+    fontWeight: "600",
+    textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   riskBadge: {
@@ -248,111 +307,68 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 20,
   },
-  riskBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
-  },
+  riskBadgeText: { color: "#FFFFFF", fontSize: 14, fontWeight: "700" },
   confidenceContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
-  confidenceLabel: {
-    fontSize: 16,
-    color: '#6B7280',
-    fontWeight: '500',
-  },
-  confidenceValue: {
-    fontSize: 32,
-    fontWeight: '700',
-  },
+  confidenceLabel: { fontSize: 16, color: "#6B7280", fontWeight: "500" },
+  confidenceValue: { fontSize: 32, fontWeight: "700" },
   weatherCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
   weatherCardTitle: {
     fontSize: 14,
-    color: '#6B7280',
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    color: "#6B7280",
+    fontWeight: "600",
+    textTransform: "uppercase",
     marginBottom: 12,
   },
   weatherItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
     marginBottom: 12,
-    paddingVertical: 4,
   },
-  weatherItemText: {
-    fontSize: 14,
-    color: '#374151',
-    flex: 1,
-  },
+  weatherItemText: { fontSize: 14, color: "#374151", flex: 1 },
   recommendationsCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   recommendationsTitle: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#111827',
+    fontWeight: "700",
+    color: "#111827",
     marginBottom: 16,
   },
   recommendationItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     marginBottom: 12,
     gap: 12,
   },
   recommendationText: {
     flex: 1,
     fontSize: 14,
-    color: '#374151',
+    color: "#374151",
     lineHeight: 20,
   },
   footer: {
     padding: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: "#E5E7EB",
   },
-  footerButton: {
-    marginBottom: 12,
-  },
-  historyButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    gap: 8,
-  },
-  historyButtonText: {
-    fontSize: 14,
-    color: '#6366F1',
-    fontWeight: '600',
-  },
+  footerButton: { marginBottom: 12 },
 });
-

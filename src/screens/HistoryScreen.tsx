@@ -1,141 +1,92 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { Ionicons } from "@expo/vector-icons";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  FlatList,
-  TouchableOpacity,
-  Image,
   Alert,
+  FlatList,
+  Image,
   RefreshControl,
-} from 'react-native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useFocusEffect } from '@react-navigation/native';
-import { RootStackParamList, HistoryItem } from '../types';
-import { storageService } from '../utils/storage';
-import { getRiskColor } from '../utils/colors';
-import { Ionicons } from '@expo/vector-icons';
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { useAuth } from "../contexts/AuthContext";
+import { RootStackParamList } from "../types";
+import { getRiskColor } from "../utils/colors";
+import { resultService } from "../services/resultService";
 
-type HistoryScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'History'>;
+type HistoryScreenNavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  "History"
+>;
 
 interface Props {
   navigation: HistoryScreenNavigationProp;
 }
 
 export const HistoryScreen: React.FC<Props> = ({ navigation }) => {
-  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const { user } = useAuth();
+  const [results, setResults] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
-  const loadHistory = async () => {
-    try {
-      const items = await storageService.getHistory();
-      setHistory(items);
-    } catch (error) {
-      console.error('Error loading history:', error);
-    }
+  const loadResults = async () => {
+    if (!user) return;
+    const fetched = await resultService.getUserResults(user.uid);
+    setResults(fetched);
   };
 
-  useFocusEffect(
-    useCallback(() => {
-      loadHistory();
-    }, [])
-  );
+  useEffect(() => {
+    loadResults();
+  }, [user]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadHistory();
+    await loadResults();
     setRefreshing(false);
   };
 
-  const handleItemPress = (item: HistoryItem) => {
-    navigation.navigate('Results', { data: item.data });
+  const formatDate = (timestamp: any) => {
+    if (!timestamp) return "";
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    return date.toLocaleString();
   };
 
-  const handleDelete = (id: string) => {
-    Alert.alert(
-      'Delete Item',
-      'Are you sure you want to delete this analysis?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            await storageService.deleteHistoryItem(id);
-            loadHistory();
-          },
-        },
-      ]
-    );
-  };
-
-  const handleClearAll = () => {
-    Alert.alert(
-      'Clear All History',
-      'Are you sure you want to delete all analysis history?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Clear All',
-          style: 'destructive',
-          onPress: async () => {
-            await storageService.clearHistory();
-            loadHistory();
-          },
-        },
-      ]
-    );
-  };
-
-  const formatDate = (timestamp: number) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-    if (days === 0) return 'Today';
-    if (days === 1) return 'Yesterday';
-    if (days < 7) return `${days} days ago`;
-    
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
-    });
-  };
-
-  const renderItem = ({ item }: { item: HistoryItem }) => {
-    const riskColor = getRiskColor(item.risk_level);
-    const confidencePercentage = Math.round(item.confidence * 100);
+  const renderItem = ({ item }: { item: any }) => {
+    const riskColor = getRiskColor(item.riskLevel);
 
     return (
       <TouchableOpacity
-        style={styles.historyItem}
-        onPress={() => handleItemPress(item)}
-        activeOpacity={0.7}
+        style={styles.card}
+        onPress={() =>
+          navigation.navigate("Results", {
+            data: item,
+            imageUri: item.imageUrl,
+            fromHistory: true,
+          })
+        }
       >
-        <Image source={{ uri: item.imageUri }} style={styles.historyImage} />
-        <View style={styles.historyContent}>
-          <View style={styles.historyHeader}>
-            <Text style={styles.historyTitle}>
-              {item.predicted_class.charAt(0).toUpperCase() + item.predicted_class.slice(1)}
-            </Text>
-            <View style={[styles.riskBadge, { backgroundColor: riskColor }]}>
-              <Text style={styles.riskBadgeText}>{item.risk_level}</Text>
-            </View>
+        {item.imageUrl ? (
+          <Image source={{ uri: item.imageUrl }} style={styles.image} />
+        ) : (
+          <View style={styles.placeholderImage}>
+            <Ionicons name="image-outline" size={40} color="#9CA3AF" />
           </View>
-          <Text style={styles.historyDate}>{formatDate(item.timestamp)}</Text>
-          <Text style={styles.historyConfidence}>
-            Confidence: {confidencePercentage}%
+        )}
+        <View style={styles.info}>
+          <Text style={styles.title}>
+            {item?.predictedClass
+              ? item.predictedClass.charAt(0).toUpperCase() +
+                item.predictedClass.slice(1)
+              : "Unknown"}
           </Text>
+
+          <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
+          <View style={[styles.badge, { backgroundColor: riskColor }]}>
+            <Text style={styles.badgeText}>{item.riskLevel}</Text>
+          </View>
         </View>
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={() => handleDelete(item.id)}
-        >
-          <Ionicons name="trash-outline" size={20} color="#EF4444" />
-        </TouchableOpacity>
       </TouchableOpacity>
     );
   };
@@ -143,46 +94,27 @@ export const HistoryScreen: React.FC<Props> = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
+        <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color="#111827" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>History</Text>
-        {history.length > 0 && (
-          <TouchableOpacity
-            style={styles.clearButton}
-            onPress={handleClearAll}
-          >
-            <Text style={styles.clearButtonText}>Clear</Text>
-          </TouchableOpacity>
-        )}
+        <Text style={styles.headerTitle}>My Results</Text>
+        <View style={{ width: 24 }} />
       </View>
 
-      {history.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Ionicons name="time-outline" size={64} color="#D1D5DB" />
-          <Text style={styles.emptyTitle}>No History Yet</Text>
-          <Text style={styles.emptyText}>
-            Your skin analysis history will appear here
-          </Text>
-          <TouchableOpacity
-            style={styles.emptyButton}
-            onPress={() => navigation.navigate('Home')}
-          >
-            <Text style={styles.emptyButtonText}>Start Analysis</Text>
-          </TouchableOpacity>
+      {results.length === 0 ? (
+        <View style={styles.empty}>
+          <Ionicons name="time-outline" size={60} color="#D1D5DB" />
+          <Text style={styles.emptyText}>No results yet</Text>
         </View>
       ) : (
         <FlatList
-          data={history}
+          data={results}
+          keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          keyExtractor={item => item.id}
-          contentContainerStyle={styles.listContent}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
+          contentContainerStyle={{ padding: 16 }}
         />
       )}
     </SafeAreaView>
@@ -190,127 +122,48 @@ export const HistoryScreen: React.FC<Props> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
+  container: { flex: 1, backgroundColor: "#F9FAFB" },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     padding: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFF",
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: "#E5E7EB",
   },
-  backButton: {
-    padding: 8,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  clearButton: {
-    padding: 8,
-  },
-  clearButtonText: {
-    fontSize: 14,
-    color: '#EF4444',
-    fontWeight: '600',
-  },
-  listContent: {
-    padding: 16,
-  },
-  historyItem: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
+  headerTitle: { fontSize: 18, fontWeight: "700", color: "#111827" },
+  card: {
+    flexDirection: "row",
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
-    padding: 12,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
-  historyImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-    backgroundColor: '#F3F4F6',
+  image: { width: 100, height: 100 },
+  placeholderImage: {
+    width: 100,
+    height: 100,
+    backgroundColor: "#F3F4F6",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  historyContent: {
-    flex: 1,
-    marginLeft: 12,
-    justifyContent: 'center',
-  },
-  historyHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  historyTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  riskBadge: {
-    paddingHorizontal: 8,
+  info: { flex: 1, padding: 12, justifyContent: "center" },
+  title: { fontSize: 16, fontWeight: "600", color: "#111827" },
+  date: { fontSize: 12, color: "#6B7280", marginTop: 4 },
+  badge: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
+    marginTop: 6,
   },
-  riskBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  historyDate: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginBottom: 4,
-  },
-  historyConfidence: {
-    fontSize: 12,
-    color: '#9CA3AF',
-  },
-  deleteButton: {
-    padding: 8,
-    justifyContent: 'center',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#111827',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: '#6B7280',
-    textAlign: 'center',
-    marginBottom: 32,
-  },
-  emptyButton: {
-    backgroundColor: '#6366F1',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-  },
-  emptyButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
+  badgeText: { color: "#FFF", fontSize: 12, fontWeight: "600" },
+  empty: { flex: 1, justifyContent: "center", alignItems: "center" },
+  emptyText: { fontSize: 16, color: "#6B7280", marginTop: 12 },
 });
-

@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   ViewStyle,
   TextStyle,
+  StyleProp
 } from 'react-native';
 
 interface PrimaryButtonProps {
@@ -13,7 +14,7 @@ interface PrimaryButtonProps {
   onPress: () => void;
   loading?: boolean;
   disabled?: boolean;
-  style?: ViewStyle;
+   style?: StyleProp<ViewStyle>;
   textStyle?: TextStyle;
 }
 
