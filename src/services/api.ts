@@ -4,7 +4,7 @@ import { AnalyzeResponse } from '../types';
 // Backend URL - for physical devices, use your computer's local IP (e.g., http://192.168.1.100:5000)
 // For Android emulator, use http://10.0.2.2:5000
 // For iOS simulator, use http://localhost:5000
-const BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://172.16.17.77:5000/api';
+const BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://b78b26caa21a.ngrok-free.app';
 
 class ApiService {
   private client: AxiosInstance;
@@ -23,10 +23,20 @@ class ApiService {
       
       // Extract filename from URI
       const filename = imageUri.split('/').pop() || 'photo.jpg';
-      const match = /\.(\w+)$/.exec(filename);
-      const type = match ? `image/${match[1]}` : 'image/jpeg';
+      const match = /\.(\w+)$/.exec(filename.toLowerCase());
+      // Map common extensions to MIME types
+      const extension = match ? match[1].toLowerCase() : 'jpg';
+      const mimeTypes: { [key: string]: string } = {
+        'jpg': 'image/jpeg',
+        'jpeg': 'image/jpeg',
+        'png': 'image/png',
+        'gif': 'image/gif',
+        'webp': 'image/webp',
+      };
+      const type = mimeTypes[extension] || 'image/jpeg';
 
-      // Append image file to FormData
+      // Append image file to FormData - React Native/Expo format
+      // The object structure {uri, name, type} is required for React Native
       formData.append('image', {
         uri: imageUri,
         name: filename,
@@ -37,8 +47,8 @@ class ApiService {
       formData.append('lat', latitude.toString());
       formData.append('lon', longitude.toString());
 
-      // Axios will automatically set Content-Type with boundary for FormData
-      console.log('FormData:', formData);
+      // Make request - axios will automatically set Content-Type with boundary for FormData
+      // In React Native/Expo, FormData is handled specially - don't set Content-Type manually
       const response = await this.client.post<AnalyzeResponse>('/predict', formData);
       
 
@@ -46,8 +56,17 @@ class ApiService {
     } catch (error) {
       console.error('API Error:', error);
       
-      // Return mock data if API is not available (for development/testing)
+      // Log detailed error information
       if (axios.isAxiosError(error)) {
+        console.error('Error details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message,
+          code: error.code,
+        });
+        
+        // Return mock data if API is not available (for development/testing)
         const isConnectionError = 
           error.code === 'ECONNREFUSED' || 
           error.code === 'NETWORK_ERROR' ||
