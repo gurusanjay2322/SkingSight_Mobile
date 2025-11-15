@@ -1,25 +1,25 @@
+import { Ionicons } from '@expo/vector-icons';
+import { RouteProp } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
   SafeAreaView,
   ScrollView,
+  StyleSheet,
+  Text,
   TouchableOpacity,
+  View,
 } from 'react-native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RouteProp } from '@react-navigation/native';
-import { RootStackParamList } from '../types';
 import { InfoCard } from '../components/InfoCard';
 import { PrimaryButton } from '../components/PrimaryButton';
+import { RootStackParamList } from '../types';
 import {
+  getAQIColor,
+  getAQILabel,
   getRiskColor,
   getUVIndexColor,
-  getAQIColor,
   getUVIndexLabel,
-  getAQILabel,
 } from '../utils/colors';
-import { Ionicons } from '@expo/vector-icons';
 
 type ResultsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Results'>;
 type ResultsScreenRouteProp = RouteProp<RootStackParamList, 'Results'>;
@@ -115,20 +115,22 @@ export const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
         {/* Weather Info */}
         <View style={styles.weatherCard}>
           <Text style={styles.weatherCardTitle}>Weather Information</Text>
-          <View style={styles.weatherRow}>
-            <View style={styles.weatherItem}>
-              <Ionicons name="location" size={20} color="#6B7280" />
-              <Text style={styles.weatherItemText}>{data.weather.city}</Text>
-            </View>
-            <View style={styles.weatherRow}>
-              <View style={styles.weatherItem}>
-                <Ionicons name="thermometer" size={20} color="#6B7280" />
-                <Text style={styles.weatherItemText}>
-                  {data.weather.temp_min}° - {data.weather.temp_max}°C
-                </Text>
-              </View>
-            </View>
+          
+          {/* City Location */}
+          <View style={styles.weatherItem}>
+            <Ionicons name="location" size={20} color="#6B7280" />
+            <Text style={styles.weatherItemText}>{data.weather.city}</Text>
           </View>
+          
+          {/* Temperature */}
+          <View style={styles.weatherItem}>
+            <Ionicons name="thermometer" size={20} color="#6B7280" />
+            <Text style={styles.weatherItemText}>
+              {data.weather.temp_min.toFixed(1)}°C - {data.weather.temp_max.toFixed(1)}°C
+            </Text>
+          </View>
+          
+          {/* Dominant Pollutant */}
           <View style={styles.weatherItem}>
             <Ionicons name="warning" size={20} color="#F59E0B" />
             <Text style={styles.weatherItemText}>
@@ -287,16 +289,12 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     marginBottom: 12,
   },
-  weatherRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
   weatherItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
+    gap: 12,
+    marginBottom: 12,
+    paddingVertical: 4,
   },
   weatherItemText: {
     fontSize: 14,
