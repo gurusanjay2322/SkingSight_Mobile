@@ -101,8 +101,9 @@ export const SignUpScreen: React.FC<Props> = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : Platform.OS === 'web' ? undefined : 'height'}
         style={styles.keyboardView}
+        enabled={Platform.OS !== 'web'}
       >
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.header}>

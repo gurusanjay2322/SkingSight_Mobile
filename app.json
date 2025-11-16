@@ -58,8 +58,8 @@
       "package": "com.muthu.aanand.skinsight_mobile"
     },
     "web": {
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "output": "server",
+      "bundler": "metro"
     },
     "plugins": [
       [

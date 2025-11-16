@@ -66,8 +66,16 @@ export const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
       data?.suggestions || data?.rule_based_suggestions || [],
     genaiSuggestions:
       data?.genai_suggestions || data?.ai_suggestions || [],
-    disease: data?.disease || null,
+    disease: data?.disease ? {
+      label: data.disease.label || data.disease.predicted_class || "Unknown",
+      confidence: data.disease.confidence ?? 0,
+      confidencePercentage: Math.round((data.disease.confidence ?? 0) * 100),
+    } : null,
   };
+
+  // Disease detection threshold (30% confidence)
+  const DISEASE_THRESHOLD = 0.3;
+  const hasDisease = normalizedData.disease && normalizedData.disease.confidence >= DISEASE_THRESHOLD;
 
   const riskColor = getRiskColor(normalizedData.riskLevel);
   const uvColor = getUVIndexColor(normalizedData.weather.uv_index || 0);
@@ -175,31 +183,72 @@ export const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
 
         {/* Disease Detection */}
         {normalizedData.disease && (
-          <View style={[styles.diseaseCard, { borderColor: normalizedData.disease.confidence > 0.7 ? "#EF4444" : "#F59E0B" }]}>
+          <View style={[
+            styles.diseaseCard, 
+            { 
+              borderColor: hasDisease 
+                ? (normalizedData.disease.confidence > 0.7 ? "#EF4444" : "#F59E0B")
+                : "#10B981" 
+            }
+          ]}>
             <View style={styles.diseaseHeader}>
               <Ionicons 
-                name="medical" 
+                name={hasDisease ? "medical" : "checkmark-circle"} 
                 size={24} 
-                color={normalizedData.disease.confidence > 0.7 ? "#EF4444" : "#F59E0B"} 
+                color={hasDisease 
+                  ? (normalizedData.disease.confidence > 0.7 ? "#EF4444" : "#F59E0B")
+                  : "#10B981"
+                } 
               />
               <Text style={styles.diseaseTitle}>Detected Skin Condition</Text>
             </View>
-            <Text style={styles.diseaseClass}>
-              {normalizedData.disease.predicted_class}
-            </Text>
-            <View style={styles.diseaseConfidence}>
-              <Text style={styles.diseaseConfidenceLabel}>Confidence:</Text>
-              <Text style={[styles.diseaseConfidenceValue, { color: normalizedData.disease.confidence > 0.7 ? "#EF4444" : "#F59E0B" }]}>
-                {normalizedData.disease.confidence_percentage}
-              </Text>
-            </View>
-            {normalizedData.disease.confidence > 0.7 && (
-              <View style={styles.diseaseWarning}>
-                <Ionicons name="warning" size={20} color="#EF4444" />
-                <Text style={styles.diseaseWarningText}>
-                  High confidence detection. Please consult a dermatologist.
+            
+            {hasDisease ? (
+              <>
+                <Text style={styles.diseaseClass}>
+                  {normalizedData.disease.label}
                 </Text>
-              </View>
+                <View style={styles.diseaseConfidence}>
+                  <Text style={styles.diseaseConfidenceLabel}>Confidence:</Text>
+                  <Text style={[
+                    styles.diseaseConfidenceValue, 
+                    { 
+                      color: normalizedData.disease.confidence > 0.7 ? "#EF4444" : "#F59E0B" 
+                    }
+                  ]}>
+                    {normalizedData.disease.confidencePercentage}%
+                  </Text>
+                </View>
+                {normalizedData.disease.confidence > 0.7 && (
+                  <View style={styles.diseaseWarning}>
+                    <Ionicons name="warning" size={20} color="#EF4444" />
+                    <Text style={styles.diseaseWarningText}>
+                      High confidence detection. Please consult a dermatologist.
+                    </Text>
+                  </View>
+                )}
+              </>
+            ) : (
+              <>
+                <View style={styles.noDiseaseContainer}>
+                  <Ionicons name="checkmark-circle" size={32} color="#10B981" />
+                  <Text style={styles.noDiseaseText}>
+                    No Disease Detected
+                  </Text>
+                </View>
+                <View style={styles.diseaseConfidence}>
+                  <Text style={styles.diseaseConfidenceLabel}>Confidence Score:</Text>
+                  <Text style={[styles.diseaseConfidenceValue, { color: "#10B981" }]}>
+                    {normalizedData.disease.confidencePercentage}%
+                  </Text>
+                </View>
+                <View style={styles.noDiseaseMessage}>
+                  <Ionicons name="information-circle" size={20} color="#10B981" />
+                  <Text style={styles.noDiseaseMessageText}>
+                    Your skin appears healthy. The confidence score is below the detection threshold.
+                  </Text>
+                </View>
+              </>
             )}
           </View>
         )}
@@ -462,6 +511,33 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     color: "#991B1B",
+    lineHeight: 18,
+  },
+  noDiseaseContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
+    gap: 12,
+  },
+  noDiseaseText: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#10B981",
+  },
+  noDiseaseMessage: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    backgroundColor: "#ECFDF5",
+    padding: 12,
+    borderRadius: 8,
+    gap: 8,
+    marginTop: 8,
+  },
+  noDiseaseMessageText: {
+    flex: 1,
+    fontSize: 13,
+    color: "#065F46",
     lineHeight: 18,
   },
 });

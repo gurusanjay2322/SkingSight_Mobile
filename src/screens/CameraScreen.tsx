@@ -7,12 +7,14 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
 import { Ionicons } from '@expo/vector-icons';
 import { apiService } from '../services/api';
+import { WebCamera } from '../components/WebCamera';
 
 type CameraScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Camera'>;
 
@@ -93,6 +95,64 @@ export const CameraScreen: React.FC<Props> = ({ navigation }) => {
     setFacing(current => (current === 'back' ? 'front' : 'back'));
   };
 
+  const handleWebCapture = async (uri: string) => {
+    try {
+      // Validate the captured image
+      try {
+        const validationResponse = await apiService.validateSkin(uri);
+        
+        if (validationResponse.valid) {
+          // Image is valid, navigate to preview screen
+          navigation.navigate('Preview', { imageUri: uri });
+        } else {
+          // Image is not valid, prompt user to recapture
+          Alert.alert(
+            'Invalid Photo',
+            validationResponse.message || 'Please ensure your face is clearly visible and well-positioned within the frame. Try capturing again.',
+            [
+              {
+                text: 'Retake',
+                style: 'default',
+              },
+            ]
+          );
+        }
+      } catch (validationError) {
+        console.error('Error validating skin:', validationError);
+        Alert.alert(
+          'Validation Error',
+          'Unable to validate the image. Please try again.',
+          [
+            {
+              text: 'Retry',
+              onPress: () => handleWebCapture(uri),
+            },
+            {
+              text: 'Cancel',
+              style: 'cancel',
+            },
+          ]
+        );
+      }
+    } catch (error) {
+      console.error('Error processing web capture:', error);
+      Alert.alert('Error', 'Failed to process photo. Please try again.');
+    }
+  };
+
+  // Web camera implementation
+  if (Platform.OS === 'web') {
+    return (
+      <SafeAreaView style={styles.container}>
+        <WebCamera
+          onCapture={handleWebCapture}
+          onClose={() => navigation.goBack()}
+        />
+      </SafeAreaView>
+    );
+  }
+
+  // Native camera implementation
   if (!permission) {
     return (
       <View style={styles.container}>

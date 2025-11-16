@@ -10,9 +10,11 @@ export interface WeatherData {
 }
 
 export interface DiseaseInfo {
-  predicted_class: string;
+  predicted_class?: string;
+  label?: string;
   confidence: number;
-  confidence_percentage: string;
+  confidence_percentage?: string;
+  scores?: Record<string, number>;
 }
 
 export interface AnalyzeResponse {
