@@ -13,7 +13,10 @@ import {
 } from "react-native";
 import { InfoCard } from "../components/InfoCard";
 import { PrimaryButton } from "../components/PrimaryButton";
+import { useAuth } from "../contexts/AuthContext";
+import { resultService } from "../services/resultService";
 import { RootStackParamList } from "../types";
+import { uploadToCloudinary } from "../utils/cloudinary";
 import {
   getAQIColor,
   getAQILabel,
@@ -21,9 +24,6 @@ import {
   getUVIndexColor,
   getUVIndexLabel,
 } from "../utils/colors";
-import { uploadToCloudinary } from "../utils/cloudinary";
-import { resultService } from "../services/resultService";
-import { useAuth } from "../contexts/AuthContext";
 
 type ResultsScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -66,7 +66,16 @@ export const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
       data?.suggestions || data?.rule_based_suggestions || [],
     genaiSuggestions:
       data?.genai_suggestions || data?.ai_suggestions || [],
+    disease: data?.disease ? {
+      label: data.disease.label || data.disease.predicted_class || "Unknown",
+      confidence: data.disease.confidence ?? 0,
+      confidencePercentage: Math.round((data.disease.confidence ?? 0) * 100),
+    } : null,
   };
+
+  // Disease detection threshold (30% confidence)
+  const DISEASE_THRESHOLD = 0.3;
+  const hasDisease = normalizedData.disease && normalizedData.disease.confidence >= DISEASE_THRESHOLD;
 
   const riskColor = getRiskColor(normalizedData.riskLevel);
   const uvColor = getUVIndexColor(normalizedData.weather.uv_index || 0);
@@ -171,6 +180,78 @@ export const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
           icon={getSkinTypeIcon(normalizedData.predictedClass || "Unknown")}
           color={riskColor}
         />
+
+        {/* Disease Detection */}
+        {normalizedData.disease && (
+          <View style={[
+            styles.diseaseCard, 
+            { 
+              borderColor: hasDisease 
+                ? (normalizedData.disease.confidence > 0.7 ? "#EF4444" : "#F59E0B")
+                : "#10B981" 
+            }
+          ]}>
+            <View style={styles.diseaseHeader}>
+              <Ionicons 
+                name={hasDisease ? "medical" : "checkmark-circle"} 
+                size={24} 
+                color={hasDisease 
+                  ? (normalizedData.disease.confidence > 0.7 ? "#EF4444" : "#F59E0B")
+                  : "#10B981"
+                } 
+              />
+              <Text style={styles.diseaseTitle}>Detected Skin Condition</Text>
+            </View>
+            
+            {hasDisease ? (
+              <>
+                <Text style={styles.diseaseClass}>
+                  {normalizedData.disease.label}
+                </Text>
+                <View style={styles.diseaseConfidence}>
+                  <Text style={styles.diseaseConfidenceLabel}>Confidence:</Text>
+                  <Text style={[
+                    styles.diseaseConfidenceValue, 
+                    { 
+                      color: normalizedData.disease.confidence > 0.7 ? "#EF4444" : "#F59E0B" 
+                    }
+                  ]}>
+                    {normalizedData.disease.confidencePercentage}%
+                  </Text>
+                </View>
+                {normalizedData.disease.confidence > 0.7 && (
+                  <View style={styles.diseaseWarning}>
+                    <Ionicons name="warning" size={20} color="#EF4444" />
+                    <Text style={styles.diseaseWarningText}>
+                      High confidence detection. Please consult a dermatologist.
+                    </Text>
+                  </View>
+                )}
+              </>
+            ) : (
+              <>
+                <View style={styles.noDiseaseContainer}>
+                  <Ionicons name="checkmark-circle" size={32} color="#10B981" />
+                  <Text style={styles.noDiseaseText}>
+                    No Disease Detected
+                  </Text>
+                </View>
+                <View style={styles.diseaseConfidence}>
+                  <Text style={styles.diseaseConfidenceLabel}>Confidence Score:</Text>
+                  <Text style={[styles.diseaseConfidenceValue, { color: "#10B981" }]}>
+                    {normalizedData.disease.confidencePercentage}%
+                  </Text>
+                </View>
+                <View style={styles.noDiseaseMessage}>
+                  <Ionicons name="information-circle" size={20} color="#10B981" />
+                  <Text style={styles.noDiseaseMessageText}>
+                    Your skin appears healthy. The confidence score is below the detection threshold.
+                  </Text>
+                </View>
+              </>
+            )}
+          </View>
+        )}
 
         {/* UV Index */}
         <InfoCard
@@ -371,4 +452,92 @@ const styles = StyleSheet.create({
     borderTopColor: "#E5E7EB",
   },
   footerButton: { marginBottom: 12 },
+  diseaseCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  diseaseHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+    gap: 8,
+  },
+  diseaseTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#6B7280",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  diseaseClass: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 8,
+  },
+  diseaseConfidence: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  diseaseConfidenceLabel: {
+    fontSize: 14,
+    color: "#6B7280",
+    fontWeight: "500",
+  },
+  diseaseConfidenceValue: {
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  diseaseWarning: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    backgroundColor: "#FEF2F2",
+    padding: 12,
+    borderRadius: 8,
+    gap: 8,
+    marginTop: 8,
+  },
+  diseaseWarningText: {
+    flex: 1,
+    fontSize: 13,
+    color: "#991B1B",
+    lineHeight: 18,
+  },
+  noDiseaseContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
+    gap: 12,
+  },
+  noDiseaseText: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#10B981",
+  },
+  noDiseaseMessage: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    backgroundColor: "#ECFDF5",
+    padding: 12,
+    borderRadius: 8,
+    gap: 8,
+    marginTop: 8,
+  },
+  noDiseaseMessageText: {
+    flex: 1,
+    fontSize: 13,
+    color: "#065F46",
+    lineHeight: 18,
+  },
 });

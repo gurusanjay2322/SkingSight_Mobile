@@ -9,13 +9,22 @@ export interface WeatherData {
   uv_index: number;
 }
 
+export interface DiseaseInfo {
+  predicted_class?: string;
+  label?: string;
+  confidence: number;
+  confidence_percentage?: string;
+  scores?: Record<string, number>;
+}
+
 export interface AnalyzeResponse {
   confidence: number;
   genai_suggestions: string[];
   predicted_class: string;
-  risk_level: 'Low' | 'Medium' | 'High';
+  risk_level: 'Low' | 'Medium' | 'High' | 'Very High';
   rule_based_suggestions: string[];
   weather: WeatherData;
+  disease?: DiseaseInfo;
 }
 
 export interface ValidateSkinResponse {
@@ -23,6 +32,7 @@ export interface ValidateSkinResponse {
   message: string;
   skin_ratio: number;
   valid: boolean;
+  disease?: DiseaseInfo;
 }
 
 // Navigation Types

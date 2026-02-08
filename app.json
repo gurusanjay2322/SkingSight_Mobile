@@ -17,7 +17,7 @@
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true,
           "NSExceptionDomains": {
-            "172.16.17.77": {
+            "127.0.0.1": {
               "NSExceptionAllowsInsecureHTTPLoads": true,
               "NSIncludesSubdomains": true
             }
@@ -58,8 +58,8 @@
       "package": "com.muthu.aanand.skinsight_mobile"
     },
     "web": {
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "output": "server",
+      "bundler": "metro"
     },
     "plugins": [
       [
