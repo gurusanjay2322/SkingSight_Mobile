@@ -4,7 +4,7 @@ import { AnalyzeResponse, ValidateSkinResponse } from '../types';
 // Backend URL - for physical devices, use your computer's local IP (e.g., http://192.168.1.100:5000)
 // For Android emulator, use http://10.0.2.2:5000
 // For iOS simulator, use http://localhost:5000
-const BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '  https://d7b1cc082a56.ngrok-free.app/api';
+const BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://640d-122-167-98-240.ngrok-free.app/api';
 
 class ApiService {
   private client: AxiosInstance;
