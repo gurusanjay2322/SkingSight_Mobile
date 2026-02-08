@@ -52,7 +52,7 @@ export interface HistoryItem {
   id: string;
   timestamp: number;
   predicted_class: string;
-  risk_level: 'Low' | 'Medium' | 'High';
+  risk_level: 'Low' | 'Medium' | 'High' | 'Very High';
   confidence: number;
   imageUri: string;
   data: AnalyzeResponse;
