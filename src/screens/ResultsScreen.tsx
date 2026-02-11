@@ -310,9 +310,7 @@ export const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
           <Ionicons name="arrow-back" size={24} color="#111827" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Analysis Results</Text>
-        <TouchableOpacity onPress={() => generateAndSharePDF(normalizedData, imageUri)}>
-          <Ionicons name="share-outline" size={24} color="#6366F1" />
-        </TouchableOpacity>
+        <View style={{ width: 24 }} />
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -643,6 +641,13 @@ export const ResultsScreen: React.FC<Props> = ({ navigation, route }) => {
             style={[styles.footerButton, { backgroundColor: "#6366F1" }]}
           />
         )}
+        <TouchableOpacity
+          style={styles.exportButton}
+          onPress={() => generateAndSharePDF(normalizedData, imageUri)}
+        >
+          <Ionicons name="document-text-outline" size={20} color="#6366F1" />
+          <Text style={styles.exportButtonText}>Export PDF Report</Text>
+        </TouchableOpacity>
         <PrimaryButton
           title="New Analysis"
           onPress={() => navigation.navigate("Home")}
@@ -789,20 +794,37 @@ const styles = StyleSheet.create({
   // Footer
   footer: { padding: 16, backgroundColor: "#FFFFFF", borderTopWidth: 1, borderTopColor: "#E5E7EB" },
   footerButton: { marginBottom: 8 },
+  exportButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: "#6366F1",
+    backgroundColor: "#EEF2FF",
+    marginBottom: 8,
+    gap: 8,
+  },
+  exportButtonText: {
+    color: "#6366F1",
+    fontSize: 16,
+    fontWeight: "600",
+  },
 
   // FAB
   fab: {
     position: "absolute",
-    bottom: 100,
+    bottom: 220,
     right: 20,
-    backgroundColor: "#6366F1",
+    backgroundColor: "#0D9488",
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 12,
     paddingHorizontal: 18,
     borderRadius: 28,
     elevation: 6,
-    shadowColor: "#6366F1",
+    shadowColor: "#0D9488",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
