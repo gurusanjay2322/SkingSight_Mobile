@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "skinsight_mobile",
+    "name": "SkinSight",
     "slug": "skinsight_mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -35,15 +35,6 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION",
-        "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO",
-        "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION",
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
@@ -94,7 +85,12 @@
           }
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "9be1d4b9-3531-41f8-bef5-d1caf9958e6d"
+      }
+    }
   },
   "experiments": {
     "reactCompiler": true
