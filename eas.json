@@ -1,13 +1,26 @@
 {
   "cli": {
-    "version": ">= 3.0.0"
+    "version": ">= 3.0.0",
+    "appVersionSource": "local"
   },
   "build": {
     "preview": {
       "android": {
         "buildType": "apk"
       },
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME": "dc0orjwz9",
+        "EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET": "GlowScan",
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyC--7GTundq-_g9EBFIY0v30LVevCuoLEg",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "skinsight-5f746.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "skinsight-5f746",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "skinsight-5f746.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "278426790898",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:278426790898:web:022f336c7b80256795596b",
+        "EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID": "G-ME6NB05EMP",
+        "EXPO_PUBLIC_BACKEND_URL": "https://contrariously-unvalidating-iliana.ngrok-free.dev/api"
+      }
     },
     "production": {
       "android": {
