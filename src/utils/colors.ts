@@ -1,13 +1,16 @@
 // Color utilities for risk levels and indicators
 
-export const getRiskColor = (riskLevel: 'Low' | 'Medium' | 'High'): string => {
+export const getRiskColor = (riskLevel: string): string => {
   switch (riskLevel) {
     case 'Low':
       return '#10B981'; // Green
     case 'Medium':
+    case 'Moderate':
       return '#F59E0B'; // Amber
     case 'High':
       return '#EF4444'; // Red
+    case 'Very High':
+      return '#DC2626'; // Dark Red
     default:
       return '#6B7280'; // Gray
   }

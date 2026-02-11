@@ -65,6 +65,13 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
             <View style={styles.iconRow}>
               <TouchableOpacity
                 style={styles.iconButton}
+                onPress={() => navigation.navigate("Dashboard")}
+              >
+                <Ionicons name="analytics-outline" size={22} color="#6366F1" />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.iconButton}
                 onPress={() => navigation.navigate("History")}
               >
                 <Ionicons name="time-outline" size={22} color="#111827" />
