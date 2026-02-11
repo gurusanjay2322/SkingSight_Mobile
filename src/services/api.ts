@@ -1,12 +1,8 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import { AnalyzeResponse, ValidateSkinResponse } from '../types';
+const BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://contrariously-unvalidating-iliana.ngrok-free.dev/api';
 
-// Backend URL - for physical devices, use your computer's local IP (e.g., http://192.168.1.100:5000)
-// For Android emulator, use http://10.0.2.2:5000
-// For iOS simulator, use http://localhost:5000
-const BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://089a-122-167-102-88.ngrok-free.app/api';
 
-// Error types for better user messaging
 export enum ApiErrorType {
   NETWORK = 'NETWORK',
   TIMEOUT = 'TIMEOUT',
@@ -54,6 +50,9 @@ class ApiService {
     this.client = axios.create({
       baseURL: BASE_URL,
       timeout: 30000,
+      headers: {
+        'ngrok-skip-browser-warning': 'true',
+      },
     });
   }
 
