@@ -5,7 +5,6 @@ import {
     Alert,
     KeyboardAvoidingView,
     Platform,
-    SafeAreaView,
     ScrollView,
     StyleSheet,
     Text,
@@ -13,6 +12,8 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { CustomAlert } from "../components/CustomAlert";
 import { PrimaryButton } from '../components/PrimaryButton';
 import { useAuth } from '../contexts/AuthContext';
 import { RootStackParamList } from '../types';
@@ -31,6 +32,18 @@ export const SignUpScreen: React.FC<Props> = ({ navigation }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    title: string;
+    message: string;
+    type: 'info' | 'warning' | 'error' | 'success';
+    actions: any[];
+  }>({
+    title: '',
+    message: '',
+    type: 'info',
+    actions: [],
+  });
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { signUp } = useAuth();
 
@@ -63,17 +76,19 @@ export const SignUpScreen: React.FC<Props> = ({ navigation }) => {
 
     try {
       setLoading(true);
-      console.log('Calling signUp...');
       await signUp({
         fullName: fullName.trim(),
         email: email.trim(),
         phoneNumber: phoneNumber.trim(),
         password: password,
       });
-      console.log('SignUp completed successfully');
-      Alert.alert('Success', 'Account created successfully!', [
-        { text: 'OK', onPress: () => navigation.goBack() },
-      ]);
+      setAlertConfig({
+        title: 'Account Created',
+        message: 'Your account has been successfully created. Welcome to SkinSight!',
+        type: 'success',
+        actions: [{ text: 'Get Started', onPress: () => navigation.goBack() }],
+      });
+      setAlertVisible(true);
     } catch (error: any) {
       console.error('Sign up error in screen:', error);
       let errorMessage = 'Failed to create account. Please try again.';
@@ -85,21 +100,23 @@ export const SignUpScreen: React.FC<Props> = ({ navigation }) => {
           errorMessage = 'Invalid email address.';
         } else if (error.code === 'auth/weak-password') {
           errorMessage = 'Password is too weak.';
-        } else if (error.code === 'permission-denied') {
-          errorMessage = 'Permission denied. Please check your Firebase configuration.';
         }
-      } else if (error.message) {
-        errorMessage = error.message;
       }
       
-      Alert.alert('Sign Up Failed', errorMessage);
+      setAlertConfig({
+        title: 'Sign Up Failed',
+        message: errorMessage,
+        type: 'error',
+        actions: [{ text: 'OK' }],
+      });
+      setAlertVisible(true);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : Platform.OS === 'web' ? undefined : 'height'}
         style={styles.keyboardView}
@@ -226,6 +243,14 @@ export const SignUpScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+      <CustomAlert
+        visible={alertVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+        actions={alertConfig.actions}
+        onClose={() => setAlertVisible(false)}
+      />
     </SafeAreaView>
   );
 };
@@ -233,92 +258,98 @@ export const SignUpScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
   },
   keyboardView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    padding: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
   },
   header: {
     marginTop: 20,
-    marginBottom: 32,
+    marginBottom: 40,
   },
   backButton: {
     width: 40,
     height: 40,
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: 24,
   },
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#111827',
+    color: '#09090B',
     marginBottom: 8,
+    letterSpacing: -1,
   },
   subtitle: {
     fontSize: 16,
-    color: '#6B7280',
+    color: '#71717A',
     lineHeight: 24,
   },
   form: {
     flex: 1,
   },
   inputContainer: {
-    marginBottom: 20,
+    marginBottom: 24,
   },
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
-    marginBottom: 8,
+    color: '#09090B',
+    marginBottom: 10,
   },
   input: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FAFAFA',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
+    borderColor: '#E4E4E7',
+    borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    color: '#111827',
+    color: '#09090B',
   },
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FAFAFA',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
+    borderColor: '#E4E4E7',
+    borderRadius: 8,
   },
   passwordInput: {
     flex: 1,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    color: '#111827',
+    color: '#09090B',
   },
   eyeButton: {
     padding: 14,
   },
   signupButton: {
-    marginTop: 8,
+    marginTop: 12,
     marginBottom: 24,
+    backgroundColor: '#18181B',
+    height: 56,
+    borderRadius: 8,
   },
   loginContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    marginTop: 8,
   },
   loginText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#71717A',
   },
   loginLink: {
     fontSize: 14,
-    color: '#6366F1',
+    color: '#09090B',
     fontWeight: '600',
   },
 });

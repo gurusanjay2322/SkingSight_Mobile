@@ -7,10 +7,11 @@ import {
   Dimensions,
   TouchableOpacity,
   Image,
-  SafeAreaView,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,24 +28,21 @@ interface Props {
 const SLIDES = [
   {
     id: '1',
-    title: 'Scan',
-    description: 'Take a photo of your skin concern. our advanced AI analyzes it instantly.',
-    icon: 'camera',
-    color: '#6366F1',
+    title: 'Professional Scan',
+    description: 'Capture detailed images of skin concerns for clinical-grade AI analysis.',
+    icon: 'camera-outline',
   },
   {
     id: '2',
-    title: 'Analyze',
-    description: 'Get immediate insights about your skin type, condition, and risk level.',
-    icon: 'analytics',
-    color: '#EC4899',
+    title: 'Precision Analysis',
+    description: 'Receive data-driven insights on skin conditions and environmental risk factors.',
+    icon: 'analytics-outline',
   },
   {
     id: '3',
-    title: 'Improve',
-    description: 'Receive personalized routines and connect with dermatologists.',
-    icon: 'medkit',
-    color: '#10B981',
+    title: 'Personalized Care',
+    description: 'Access curated routines and professional recommendations tailored to you.',
+    icon: 'shield-checkmark-outline',
   },
 ];
 
@@ -74,8 +72,8 @@ export const OnboardingScreen: React.FC<Props> = ({ navigation }) => {
   const renderItem = ({ item }: { item: typeof SLIDES[0] }) => {
     return (
       <View style={styles.slide}>
-        <View style={[styles.iconContainer, { backgroundColor: item.color + '20' }]}>
-          <Ionicons name={item.icon as any} size={80} color={item.color} />
+        <View style={styles.iconContainer}>
+          <Ionicons name={item.icon as any} size={64} color="#18181B" />
         </View>
         <Text style={styles.title}>{item.title}</Text>
         <Text style={styles.description}>{item.description}</Text>
@@ -84,7 +82,7 @@ export const OnboardingScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={handleSkip}>
           <Text style={styles.skipText}>Skip</Text>
@@ -110,15 +108,14 @@ export const OnboardingScreen: React.FC<Props> = ({ navigation }) => {
               key={index}
               style={[
                 styles.dot,
-                currentIndex === index && styles.activeDot,
-                { backgroundColor: currentIndex === index ? SLIDES[currentIndex].color : '#D1D5DB' }
+                currentIndex === index ? styles.activeDot : styles.inactiveDot
               ]}
             />
           ))}
         </View>
 
         <TouchableOpacity
-          style={[styles.button, { backgroundColor: SLIDES[currentIndex].color }]}
+          style={styles.button}
           onPress={handleNext}
         >
           <Text style={styles.buttonText}>
@@ -136,13 +133,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   header: {
-    padding: 20,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
     alignItems: 'flex-end',
   },
   skipText: {
-    fontSize: 16,
-    color: '#6B7280',
-    fontWeight: '600',
+    fontSize: 14,
+    color: '#71717A',
+    fontWeight: '500',
   },
   flatList: {
     flex: 1,
@@ -151,56 +149,66 @@ const styles = StyleSheet.create({
     width,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
+    padding: 32,
   },
   iconContainer: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: '#FAFAFA',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 40,
+    marginBottom: 48,
+    borderWidth: 1,
+    borderColor: '#E4E4E7',
   },
   title: {
     fontSize: 28,
-    fontWeight: '800',
-    color: '#111827',
-    marginBottom: 10,
+    fontWeight: '700',
+    color: '#09090B',
+    marginBottom: 16,
     textAlign: 'center',
+    letterSpacing: -0.5,
   },
   description: {
     fontSize: 16,
-    color: '#6B7280',
+    color: '#71717A',
     textAlign: 'center',
-    paddingHorizontal: 20,
     lineHeight: 24,
+    paddingHorizontal: 12,
   },
   footer: {
-    padding: 20,
-    paddingBottom: 40,
+    padding: 32,
+    paddingBottom: Platform.OS === 'ios' ? 48 : 32,
   },
   pagination: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: 32,
+    gap: 8,
   },
   dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginHorizontal: 4,
+    height: 4,
+    borderRadius: 2,
   },
   activeDot: {
     width: 24,
+    backgroundColor: '#18181B',
+  },
+  inactiveDot: {
+    width: 8,
+    backgroundColor: '#E4E4E7',
   },
   button: {
-    paddingVertical: 16,
-    borderRadius: 12,
+    height: 56,
+    borderRadius: 8,
+    backgroundColor: '#18181B',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   buttonText: {
     color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

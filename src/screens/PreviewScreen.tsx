@@ -7,7 +7,6 @@ import {
   FlatList,
   Image,
   Modal,
-  SafeAreaView,
   StyleSheet,
   Text,
   TextInput,
@@ -17,7 +16,8 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { Loader } from '../components/Loader';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { CustomAlert } from '../components/CustomAlert';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { useAuth } from '../contexts/AuthContext';
 import { indianCities, City } from '../data/indianCities';
@@ -37,19 +37,31 @@ interface Props {
 export const PreviewScreen: React.FC<Props> = ({ navigation, route }) => {
   const { imageUri } = route.params;
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    title: string;
+    message: string;
+    type: 'info' | 'warning' | 'error' | 'success';
+    actions: any[];
+  }>({
+    title: '',
+    message: '',
+    type: 'info',
+    actions: [],
+  });
   const [modalVisible, setModalVisible] = useState(false);
   const [locationMode, setLocationMode] = useState<'select' | 'manual'>('select');
   const [manualAddress, setManualAddress] = useState('');
   const [isGeocoding, setIsGeocoding] = useState(false);
   const { user } = useAuth();
 
-  const performAnalysis = async (lat: number, lon: number) => {
+
+  const performAnalysis = async (lat: number, lon: number, cityName?: string) => {
     try {
-      setModalVisible(false); // Close modal if open
+      setModalVisible(false);
       setIsAnalyzing(true);
       const response = await apiService.analyzeSkin(imageUri, lat, lon);
 
-      // Save to history
       if (user) {
         const historyItem = {
           id: Date.now().toString(),
@@ -63,23 +75,23 @@ export const PreviewScreen: React.FC<Props> = ({ navigation, route }) => {
         await storageService.saveHistoryItem(historyItem, user.uid);
       }
 
-      navigation.navigate('Results', { data: response, imageUri });
-    } catch (error) {
+      navigation.navigate('Results', { 
+        data: response, 
+        imageUri,
+        locationName: cityName || 'Unknown' 
+      });
+    } catch (error: any) {
       console.error('Analysis error:', error);
-      Alert.alert(
-        'Analysis Failed',
-        'Unable to analyze the image. Please try again.',
-        [{ text: 'OK' }]
-      );
+      setAlertConfig({
+        title: 'Analysis Failed',
+        message: error.message || 'We could not analyze the image. Please try again.',
+        type: 'error',
+        actions: [{ text: 'OK' }],
+      });
+      setAlertVisible(true);
     } finally {
       setIsAnalyzing(false);
     }
-  };
-
-  const handleAnalyzePress = () => {
-    // Open choice modal immediately
-    setLocationMode('select');
-    setModalVisible(true);
   };
 
   const handleAutoLocation = async () => {
@@ -89,11 +101,13 @@ export const PreviewScreen: React.FC<Props> = ({ navigation, route }) => {
       await performAnalysis(location.latitude, location.longitude);
     } catch (error) {
       console.warn('Auto location failed:', error);
-      Alert.alert(
-        'Location Unavailable',
-        'Could not fetch location automatically. Please enter it manually.',
-        [{ text: 'OK', onPress: () => setLocationMode('manual') }]
-      );
+      setAlertConfig({
+        title: 'Location Unavailable',
+        message: 'Could not fetch location automatically. Please enter it manually.',
+        type: 'warning',
+        actions: [{ text: 'OK', onPress: () => setLocationMode('manual') }],
+      });
+      setAlertVisible(true);
     } finally {
       setIsGeocoding(false);
     }
@@ -101,54 +115,57 @@ export const PreviewScreen: React.FC<Props> = ({ navigation, route }) => {
 
   const handleManualSubmit = async () => {
     if (!manualAddress.trim()) {
-      Alert.alert('Error', 'Please enter a city or address.');
+      setAlertConfig({
+        title: 'Input Required',
+        message: 'Please enter a city or address.',
+        type: 'warning',
+        actions: [{ text: 'OK' }],
+      });
+      setAlertVisible(true);
       return;
     }
 
     try {
       setIsGeocoding(true);
       const location = await locationService.getGeocodedLocation(manualAddress);
-      await performAnalysis(location.latitude, location.longitude);
+      await performAnalysis(location.latitude, location.longitude, manualAddress);
     } catch (error) {
-      Alert.alert('Address Not Found', 'Could not find coordinates for this address. Please try again.');
+      setAlertConfig({
+        title: 'Address Not Found',
+        message: 'Could not find coordinates for this address. Please try a different one.',
+        type: 'error',
+        actions: [{ text: 'OK' }],
+      });
+      setAlertVisible(true);
     } finally {
       setIsGeocoding(false);
     }
   };
 
   const handleCitySelect = (city: City) => {
-     performAnalysis(city.lat, city.lon);
-  };
-
-  const handleRetake = () => {
-    navigation.goBack();
+    performAnalysis(city.lat, city.lon, city.label);
   };
 
   const renderCityItem = ({ item }: { item: City }) => (
     <TouchableOpacity
       style={styles.cityItem}
-      onPress={() => handleCitySelect(item)}
+      onPress={() => performAnalysis(item.lat, item.lon)}
     >
-      <Ionicons name="location-outline" size={20} color="#4B5563" />
+      <Ionicons name="location-outline" size={18} color="#71717A" />
       <Text style={styles.cityText}>{item.label}</Text>
     </TouchableOpacity>
   );
 
-  if (isAnalyzing) {
-    return <Loader message="Analyzing your skin..." />;
-  }
-
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Ionicons name="arrow-back" size={24} color="#111827" />
+        <View>
+          <Text style={styles.headerTitle}>Review Photo</Text>
+          <Text style={styles.headerSubtitle}>Confirm your scan for analysis</Text>
+        </View>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeHeader}>
+          <Ionicons name="close" size={24} color="#09090B" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Preview</Text>
-        <View style={styles.placeholder} />
       </View>
 
       <View style={styles.content}>
@@ -156,326 +173,257 @@ export const PreviewScreen: React.FC<Props> = ({ navigation, route }) => {
           <Image source={{ uri: imageUri }} style={styles.image} resizeMode="cover" />
         </View>
 
-        <View style={styles.infoContainer}>
-          <Text style={styles.infoText}>
-            Review your photo and tap "Analyze". You can choose how to detect your location.
-          </Text>
+        <View style={styles.infoBox}>
+          <View style={styles.infoRow}>
+            <Ionicons name="location-outline" size={18} color="#71717A" />
+            <Text style={styles.infoText}>Acquiring environmental context...</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Ionicons name="shield-outline" size={18} color="#71717A" />
+            <Text style={styles.infoText}>Encrypted clinical-grade processing</Text>
+          </View>
         </View>
       </View>
 
       <View style={styles.footer}>
-        <PrimaryButton
-          title="Retake"
-          onPress={handleRetake}
-          style={[styles.button, styles.retakeButton]}
-          textStyle={styles.retakeButtonText}
-        />
-        <PrimaryButton
-          title="Analyze"
-          onPress={handleAnalyzePress}
-          style={styles.button}
-        />
+        <TouchableOpacity
+          style={styles.analyzeButton}
+          onPress={() => setModalVisible(true)}
+          disabled={isAnalyzing}
+        >
+          <Text style={styles.analyzeButtonText}>Analyze Photo</Text>
+          <Ionicons name="arrow-forward" size={18} color="#FFF" />
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={styles.retakeButton}
+          onPress={() => navigation.goBack()}
+          disabled={isAnalyzing}
+        >
+          <Text style={styles.retakeButtonText}>Retake Photo</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Location Selection Modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.modalOverlay}
-        >
-          <View style={styles.modalContent}>
-            
-            {/* Header with Back button if in manual mode */}
-            <View style={styles.modalHeaderRow}>
-              {locationMode === 'manual' ? (
-                <TouchableOpacity onPress={() => setLocationMode('select')} style={styles.modalBackBtn}>
-                   <Ionicons name="arrow-back" size={24} color="#111827" />
+      {isAnalyzing && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#18181B" />
+          <Text style={styles.loadingText}>Running AI Analysis</Text>
+          <Text style={styles.loadingSubtext}>Correlating with environmental data...</Text>
+        </View>
+      )}
+
+      {/* Location Modal */}
+      <Modal visible={modalVisible} transparent animationType="slide" onRequestClose={() => setModalVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              {locationMode === 'manual' && (
+                <TouchableOpacity onPress={() => setLocationMode('select')}>
+                  <Ionicons name="arrow-back" size={24} color="#09090B" />
                 </TouchableOpacity>
-              ) : <View style={{width: 24}} />}
-              
+              )}
               <Text style={styles.modalTitle}>
-                {locationMode === 'select' ? 'Select Method' : 'Enter Location'}
+                {locationMode === 'select' ? 'Choose Location' : 'Enter Location'}
               </Text>
-              
               <TouchableOpacity onPress={() => setModalVisible(false)}>
-                 <Ionicons name="close" size={24} color="#6B7280" />
+                <Ionicons name="close" size={24} color="#09090B" />
               </TouchableOpacity>
             </View>
 
             {locationMode === 'select' ? (
-              <View style={styles.selectionContainer}>
-                <TouchableOpacity 
-                  style={styles.optionButton} 
-                  onPress={handleAutoLocation}
-                  disabled={isGeocoding}
-                >
-                  <View style={[styles.iconCircle, { backgroundColor: '#E0E7FF' }]}>
-                    <Ionicons name="locate" size={24} color="#4F46E5" />
+              <View style={styles.modalBody}>
+                <TouchableOpacity style={styles.optionButton} onPress={handleAutoLocation} disabled={isGeocoding}>
+                  <View style={styles.optionIcon}>
+                    <Ionicons name="locate" size={20} color="#18181B" />
                   </View>
-                  <View style={styles.optionTextContainer}>
-                    <Text style={styles.optionTitle}>Fetch Automatically</Text>
-                    <Text style={styles.optionSubtitle}>Use your current GPS location</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.optionTitle}>Auto-detect location</Text>
+                    <Text style={styles.optionSubtitle}>Use GPS coordinates</Text>
                   </View>
-                  {isGeocoding ? <ActivityIndicator color="#4F46E5" /> : <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />}
+                  {isGeocoding ? <ActivityIndicator size="small" color="#18181B" /> : <Ionicons name="chevron-forward" size={18} color="#A1A1AA" />}
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={styles.optionButton} 
-                  onPress={() => setLocationMode('manual')}
-                >
-                  <View style={[styles.iconCircle, { backgroundColor: '#F3F4F6' }]}>
-                    <Ionicons name="create-outline" size={24} color="#374151" />
+
+                <TouchableOpacity style={styles.optionButton} onPress={() => setLocationMode('manual')}>
+                  <View style={styles.optionIcon}>
+                    <Ionicons name="search" size={20} color="#18181B" />
                   </View>
-                  <View style={styles.optionTextContainer}>
-                    <Text style={styles.optionTitle}>Enter Manually</Text>
-                    <Text style={styles.optionSubtitle}>Type your city or address</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.optionTitle}>Enter manually</Text>
+                    <Text style={styles.optionSubtitle}>Search by city name</Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+                  <Ionicons name="chevron-forward" size={18} color="#A1A1AA" />
                 </TouchableOpacity>
 
                 <View style={styles.divider}>
-                   <Text style={styles.dividerText}>OR SELECT FROM LIST</Text>
+                  <Text style={styles.dividerText}>OR SELECT CITY</Text>
                 </View>
 
-                {/* Existing list as fallback/quick select */}
                 <FlatList
-                    data={indianCities}
-                    renderItem={renderCityItem}
-                    keyExtractor={(item) => item.value}
-                    style={styles.cityList}
-                    showsVerticalScrollIndicator={false}
+                  data={indianCities}
+                  renderItem={renderCityItem}
+                  keyExtractor={(item) => item.value}
+                  showsVerticalScrollIndicator={false}
+                  style={styles.cityList}
                 />
               </View>
             ) : (
-              <View style={styles.manualContainer}>
-                <Text style={styles.inputLabel}>City/Address</Text>
+              <View style={styles.manualBody}>
                 <TextInput
                   style={styles.input}
-                  placeholder="e.g. Bangalore, Indiranagar"
+                  placeholder="Enter city or address"
+                  placeholderTextColor="#A1A1AA"
                   value={manualAddress}
                   onChangeText={setManualAddress}
-                  autoFocus={true}
-                  returnKeyType="search"
-                  onSubmitEditing={handleManualSubmit}
+                  autoFocus
                 />
-                <PrimaryButton
-                  title={isGeocoding ? "Searching..." : "Confirm Location"}
-                  onPress={handleManualSubmit}
-                  style={styles.submitButton}
-                />
+                <TouchableOpacity style={styles.submitButton} onPress={handleManualSubmit} disabled={isGeocoding}>
+                  {isGeocoding ? <ActivityIndicator color="#FFF" /> : <Text style={styles.submitButtonText}>Confirm Location</Text>}
+                </TouchableOpacity>
               </View>
             )}
-
-          </View>
-        </KeyboardAvoidingView>
+          </KeyboardAvoidingView>
+        </View>
       </Modal>
+      <CustomAlert
+        visible={alertVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+        actions={alertConfig.actions}
+        onClose={() => setAlertVisible(false)}
+      />
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
+  container: { flex: 1, backgroundColor: "#FFFFFF" },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: "#E4E4E7",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
-  backButton: {
-    padding: 8,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  placeholder: {
-    width: 40,
-  },
-  content: {
-    flex: 1,
-    padding: 24,
-  },
+  headerTitle: { fontSize: 20, fontWeight: "700", color: "#09090B", letterSpacing: -0.5 },
+  headerSubtitle: { fontSize: 13, color: "#71717A", marginTop: 2 },
+  closeHeader: { padding: 4 },
+  
+  content: { flex: 1, padding: 24 },
   imageContainer: {
-    flex: 1,
-    borderRadius: 16,
-    overflow: 'hidden',
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+    width: "100%",
+    aspectRatio: 1,
+    borderRadius: 12,
+    backgroundColor: "#F4F4F5",
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#E4E4E7",
   },
-  image: {
-    width: '100%',
-    height: '100%',
-  },
-  infoContainer: {
+  image: { width: "100%", height: "100%" },
+  
+  infoBox: {
     marginTop: 24,
     padding: 16,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    backgroundColor: "#FAFAFA",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#E4E4E7",
+    gap: 12,
   },
-  infoText: {
-    fontSize: 14,
-    color: '#6B7280',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
+  infoRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  infoText: { fontSize: 13, color: "#3F3F46", flex: 1 },
+
   footer: {
-    flexDirection: 'row',
-    padding: 16,
-    gap: 12,
-    backgroundColor: '#FFFFFF',
+    padding: 20,
+    paddingBottom: Platform.OS === "ios" ? 40 : 20,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: "#E4E4E7",
+    gap: 12,
   },
-  button: {
-    flex: 1,
+  analyzeButton: {
+    backgroundColor: "#18181B",
+    height: 56,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 8,
   },
+  analyzeButtonText: { color: "#FFFFFF", fontSize: 16, fontWeight: "600" },
   retakeButton: {
-    backgroundColor: '#F3F4F6',
+    height: 52,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#E4E4E7",
   },
-  retakeButtonText: {
-    color: '#111827',
+  retakeButtonText: { color: "#71717A", fontSize: 15, fontWeight: "500" },
+
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(255,255,255,0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+  loadingText: { marginTop: 16, fontSize: 16, fontWeight: "600", color: "#09090B" },
+  loadingSubtext: { marginTop: 4, fontSize: 13, color: "#71717A" },
+
+  // Modal
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
+  modalContent: { 
+    backgroundColor: "#FFF", 
+    borderTopLeftRadius: 20, 
+    borderTopRightRadius: 20, 
+    padding: 24, 
+    maxHeight: "85%",
+    paddingBottom: 40
   },
-  modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    maxHeight: '80%',
-    paddingBottom: 40,
-  },
-  modalHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  modalBackBtn: {
-    padding: 4,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  modalSubtitle: {
-    fontSize: 14,
-    color: '#6B7280',
-    lineHeight: 20,
-  },
-  selectionContainer: {
-    gap: 12,
-  },
+  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 24 },
+  modalTitle: { fontSize: 18, fontWeight: "700", color: "#09090B" },
+  modalBody: { gap: 16 },
+  
   optionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FAFAFA",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  iconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  optionTextContainer: {
-    flex: 1,
-  },
-  optionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  optionSubtitle: {
-    fontSize: 12,
-    color: '#6B7280',
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  dividerText: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    fontWeight: '600',
-    letterSpacing: 1,
-    width: '100%',
-    textAlign: 'center',
-  },
-  cityList: {
-    maxHeight: 200,
-  },
-  cityItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderColor: "#E4E4E7",
     gap: 12,
   },
-  cityText: {
-    fontSize: 16,
-    color: '#374151',
-  },
-  manualContainer: {
-    gap: 16,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-  },
+  optionIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#E4E4E7", alignItems: "center", justifyContent: "center" },
+  optionTitle: { fontSize: 15, fontWeight: "600", color: "#09090B" },
+  optionSubtitle: { fontSize: 12, color: "#71717A", marginTop: 2 },
+  
+  divider: { flexDirection: "row", alignItems: "center", marginVertical: 8 },
+  dividerText: { fontSize: 11, fontWeight: "700", color: "#A1A1AA", letterSpacing: 0.5 },
+  
+  cityList: { maxHeight: 240 },
+  cityItem: { flexDirection: "row", alignItems: "center", paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: "#F4F4F5", gap: 10 },
+  cityText: { fontSize: 15, color: "#27272A" },
+  
+  manualBody: { gap: 16 },
   input: {
+    height: 52,
+    backgroundColor: "#FAFAFA",
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    fontSize: 15,
     borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    color: '#111827',
+    borderColor: "#E4E4E7",
+    color: "#09090B",
   },
   submitButton: {
-    marginTop: 8,
+    height: 52,
+    backgroundColor: "#18181B",
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  closeButton: {
-    padding: 16,
-    backgroundColor: '#F3F4F6',
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  closeButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#4B5563',
-  },
+  submitButtonText: { color: "#FFF", fontSize: 15, fontWeight: "600" },
 });
-

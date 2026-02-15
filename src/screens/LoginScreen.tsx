@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TextInput,
   TouchableOpacity,
   Alert,
@@ -11,6 +10,8 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { CustomAlert } from "../components/CustomAlert";
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
 import { PrimaryButton } from '../components/PrimaryButton';
@@ -28,11 +29,30 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    title: string;
+    message: string;
+    type: 'info' | 'warning' | 'error' | 'success';
+    actions: any[];
+  }>({
+    title: '',
+    message: '',
+    type: 'info',
+    actions: [],
+  });
   const { signIn } = useAuth();
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
       Alert.alert('Error', 'Please fill in all fields');
+      setAlertConfig({
+        title: 'Error',
+        message: 'Please fill in all fields',
+        type: 'error',
+        actions: [{ text: 'OK' }],
+      });
+      setAlertVisible(true);
       return;
     }
 
@@ -41,14 +61,13 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
       await signIn(email.trim(), password);
       navigation.goBack();
     } catch (error: any) {
-      console.error('Login error:', error);
-      let errorMessage = 'Failed to sign in. Please try again.';
-      if (error.code === 'auth/user-not-found') {
-        errorMessage = 'No account found with this email.';
-      } else if (error.code === 'auth/wrong-password') {
-        errorMessage = 'Incorrect password.';
-      } else if (error.code === 'auth/invalid-email') {
-        errorMessage = 'Invalid email address.';
+      console.error("Sign in error:", error);
+      let errorMessage = "Make sure your email and password are correct.";
+      
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+        errorMessage = "Invalid email or password.";
+      } else if (error.code === 'auth/too-many-requests') {
+        errorMessage = "Too many failed attempts. Please try again later.";
       }
       Alert.alert('Sign In Failed', errorMessage);
     } finally {
@@ -57,7 +76,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : Platform.OS === 'web' ? undefined : 'height'}
         style={styles.keyboardView}
@@ -134,6 +153,14 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+      <CustomAlert
+        visible={alertVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+        actions={alertConfig.actions}
+        onClose={() => setAlertVisible(false)}
+      />
     </SafeAreaView>
   );
 };
@@ -141,92 +168,98 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
   },
   keyboardView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    padding: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
   },
   header: {
     marginTop: 20,
-    marginBottom: 32,
+    marginBottom: 40,
   },
   backButton: {
     width: 40,
     height: 40,
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: 24,
   },
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#111827',
+    color: '#09090B',
     marginBottom: 8,
+    letterSpacing: -1,
   },
   subtitle: {
     fontSize: 16,
-    color: '#6B7280',
+    color: '#71717A',
     lineHeight: 24,
   },
   form: {
     flex: 1,
   },
   inputContainer: {
-    marginBottom: 20,
+    marginBottom: 24,
   },
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
-    marginBottom: 8,
+    color: '#09090B',
+    marginBottom: 10,
   },
   input: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FAFAFA',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
+    borderColor: '#E4E4E7',
+    borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    color: '#111827',
+    color: '#09090B',
   },
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FAFAFA',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
+    borderColor: '#E4E4E7',
+    borderRadius: 8,
   },
   passwordInput: {
     flex: 1,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    color: '#111827',
+    color: '#09090B',
   },
   eyeButton: {
     padding: 14,
   },
   loginButton: {
-    marginTop: 8,
+    marginTop: 12,
     marginBottom: 24,
+    backgroundColor: '#18181B',
+    height: 56,
+    borderRadius: 8,
   },
   signupContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    marginTop: 8,
   },
   signupText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#71717A',
   },
   signupLink: {
     fontSize: 14,
-    color: '#6366F1',
+    color: '#09090B',
     fontWeight: '600',
   },
 });

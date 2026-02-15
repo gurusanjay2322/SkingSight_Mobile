@@ -89,11 +89,13 @@ export const ChatModal: React.FC<Props> = ({ visible, onClose, context }) => {
       <View style={[styles.messageRow, isUser ? styles.userRow : styles.botRow]}>
         {!isUser && (
           <View style={styles.botIcon}>
-            <Ionicons name="sparkles" size={16} color="#FFF" />
+            <Ionicons name="medical" size={12} color="#71717A" />
           </View>
         )}
-        <View style={[styles.bubble, isUser ? styles.userBubble : styles.botBubble]}>
-          <Text style={[styles.messageText, isUser ? styles.userText : styles.botText]}>{item.content}</Text>
+        <View style={[styles.contentContainer, isUser && styles.userContent]}>
+          <View style={[styles.bubble, isUser ? styles.userBubble : styles.botBubble]}>
+            <Text style={[styles.messageText, isUser ? styles.userText : styles.botText]}>{item.content}</Text>
+          </View>
         </View>
       </View>
     );
@@ -106,9 +108,9 @@ export const ChatModal: React.FC<Props> = ({ visible, onClose, context }) => {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>GlowBot AI Assistant</Text>
+          <Text style={styles.headerTitle}>Assistant Assistant</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Ionicons name="close" size={24} color="#374151" />
+            <Ionicons name="close" size={20} color="#09090B" />
           </TouchableOpacity>
         </View>
 
@@ -119,15 +121,18 @@ export const ChatModal: React.FC<Props> = ({ visible, onClose, context }) => {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
           style={styles.list}
+          showsVerticalScrollIndicator={false}
         />
 
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
-            placeholder="Ask about your skin..."
+            placeholder="Type your message..."
+            placeholderTextColor="#71717A"
             value={inputText}
             onChangeText={setInputText}
             editable={!loading}
+            multiline
           />
           <TouchableOpacity
             style={[styles.sendButton, (!inputText.trim() || loading) && styles.sendButtonDisabled]}
@@ -135,9 +140,9 @@ export const ChatModal: React.FC<Props> = ({ visible, onClose, context }) => {
             disabled={!inputText.trim() || loading}
           >
             {loading ? (
-              <ActivityIndicator size="small" color="#FFF" />
+              <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
-              <Ionicons name="send" size={20} color="#FFF" />
+              <Ionicons name="arrow-up" size={18} color="#FFFFFF" />
             )}
           </TouchableOpacity>
         </View>
@@ -147,77 +152,86 @@ export const ChatModal: React.FC<Props> = ({ visible, onClose, context }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFB' },
+  container: { flex: 1, backgroundColor: "#FFFFFF" },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#FFF',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: "#E4E4E7",
   },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
+  headerTitle: { fontSize: 16, fontWeight: "600", color: "#09090B" },
   closeButton: { padding: 4 },
+  
   list: { flex: 1 },
-  listContent: { padding: 16, paddingBottom: 24 },
-  messageRow: { flexDirection: 'row', marginBottom: 12, alignItems: 'flex-end' },
-  userRow: { justifyContent: 'flex-end' },
-  botRow: { justifyContent: 'flex-start' },
+  listContent: { paddingHorizontal: 20, paddingVertical: 24, gap: 24 },
+  
+  messageRow: { flexDirection: "row", gap: 12 },
+  userRow: { justifyContent: "flex-end" },
+  botRow: { justifyContent: "flex-start" },
+  
   botIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#6366F1',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#F4F4F5",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 2,
   },
+  
+  contentContainer: { flex: 1, maxWidth: "85%" },
+  userContent: { alignItems: "flex-end" },
+  
   bubble: {
     padding: 12,
-    borderRadius: 16,
-    maxWidth: '80%',
+    borderRadius: 8,
   },
   userBubble: {
-    backgroundColor: '#6366F1',
-    borderBottomRightRadius: 2,
+    backgroundColor: "#18181B",
   },
   botBubble: {
-    backgroundColor: '#FFF',
-    borderBottomLeftRadius: 2,
+    backgroundColor: "#FAFAFA",
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: "#E4E4E7",
   },
-  messageText: { fontSize: 15, lineHeight: 22 },
-  userText: { color: '#FFF' },
-  botText: { color: '#1F2937' },
+  
+  messageText: { fontSize: 14, lineHeight: 20 },
+  userText: { color: "#FFFFFF", fontWeight: "500" },
+  botText: { color: "#27272A" },
+  
   inputContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     padding: 16,
-    backgroundColor: '#FFF',
+    paddingBottom: Platform.OS === "ios" ? 36 : 16,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    alignItems: 'center',
+    borderTopColor: "#E4E4E7",
+    alignItems: "center",
+    gap: 12,
   },
   input: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
-    borderRadius: 24,
-    paddingHorizontal: 16,
+    backgroundColor: "#FAFAFA",
+    borderRadius: 8,
+    paddingHorizontal: 12,
     paddingVertical: 10,
-    fontSize: 15,
-    marginRight: 10,
-    maxHeight: 100,
+    fontSize: 14,
+    borderWidth: 1,
+    borderColor: "#E4E4E7",
+    color: "#09090B",
   },
   sendButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#6366F1',
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: "#18181B",
+    alignItems: "center",
+    justifyContent: "center",
   },
   sendButtonDisabled: {
-    backgroundColor: '#C7D2FE',
+    backgroundColor: "#F4F4F5",
+    opacity: 0.5,
   },
 });

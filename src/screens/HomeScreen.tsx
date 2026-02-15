@@ -1,14 +1,15 @@
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import React from "react";
+import React, { useState } from "react";
 import {
   Alert,
-  SafeAreaView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { CustomAlert } from "../components/CustomAlert";
 import { PrimaryButton } from "../components/PrimaryButton";
 import { useAuth } from "../contexts/AuthContext";
 import { RootStackParamList } from "../types";
@@ -24,27 +25,41 @@ interface Props {
 
 export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const { user, userData, signOut } = useAuth();
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    title: string;
+    message: string;
+    type: 'info' | 'warning' | 'error' | 'success';
+    actions: any[];
+  }>({
+    title: '',
+    message: '',
+    type: 'info',
+    actions: [],
+  });
 
   const handleCameraPress = () => {
     if (!user) {
-      Alert.alert(
-        "Sign In Required",
-        "Sign in to save your analysis history. You can still use the app without signing in, but your data won't be saved.",
-        [
+      setAlertConfig({
+        title: "Sign In Required",
+        message: "Sign in to save your analysis history. You can still use the app without signing in, but your data won't be saved.",
+        type: 'info',
+        actions: [
           {
             text: "Continue Without Sign In",
             onPress: () => navigation.navigate("Camera"),
           },
           { text: "Sign In", onPress: () => navigation.navigate("Login") },
-        ]
-      );
+        ],
+      });
+      setAlertVisible(true);
     } else {
       navigation.navigate("Camera");
     }
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <View style={styles.topBar}>
         {user ? (
           <View style={styles.loggedInBar}>
@@ -67,41 +82,52 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
                 style={styles.iconButton}
                 onPress={() => navigation.navigate("Dashboard")}
               >
-                <Ionicons name="analytics-outline" size={22} color="#6366F1" />
+                <Ionicons name="analytics-outline" size={20} color="#09090B" />
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.iconButton}
                 onPress={() => navigation.navigate("History")}
               >
-                <Ionicons name="time-outline" size={22} color="#111827" />
+                <Ionicons name="time-outline" size={20} color="#09090B" />
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.iconButton}
                 onPress={() => {
-                  Alert.alert("Sign Out", "Are you sure you want to log out?", [
-                    { text: "Cancel", style: "cancel" },
-                    {
-                      text: "Sign Out",
-                      style: "destructive",
-                      onPress: async () => {
-                        try {
-                          await signOut();
-                          navigation.reset({
-                            index: 0,
-                            routes: [{ name: "Home" }],
-                          });
-                        } catch (error) {
-                          console.log(error);
-                          Alert.alert("Error", "Failed to sign out.");
-                        }
+                  setAlertConfig({
+                    title: 'Sign Out',
+                    message: 'Are you sure you want to log out of your account?',
+                    type: 'warning',
+                    actions: [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Sign Out',
+                        style: 'destructive',
+                        onPress: async () => {
+                          try {
+                            await signOut();
+                            navigation.reset({
+                              index: 0,
+                              routes: [{ name: "Home" }],
+                            });
+                          } catch (error) {
+                            setAlertConfig({
+                              title: 'Error',
+                              message: 'Failed to sign out. Please try again.',
+                              type: 'error',
+                              actions: [{ text: 'OK' }],
+                            });
+                            setAlertVisible(true);
+                          }
+                        },
                       },
-                    },
-                  ]);
+                    ],
+                  });
+                  setAlertVisible(true);
                 }}
               >
-                <Ionicons name="log-out-outline" size={22} color="#EF4444" />
+                <Ionicons name="log-out-outline" size={20} color="#EF4444" />
               </TouchableOpacity>
             </View>
           </View>
@@ -160,6 +186,14 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
           </Text>
         </View>
       </View>
+      <CustomAlert
+        visible={alertVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+        actions={alertConfig.actions}
+        onClose={() => setAlertVisible(false)}
+      />
     </SafeAreaView>
   );
 };
@@ -167,7 +201,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F9FAFB",
+    backgroundColor: "#FFFFFF",
   },
   loggedInBar: {
     flexDirection: "row",
@@ -175,26 +209,28 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     flex: 1,
   },
-
   iconRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "flex-end",
-    gap: 12,
+    gap: 8,
   },
   iconButton: {
     padding: 8,
+    backgroundColor: "#FAFAFA",
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#E4E4E7",
   },
-
   topBar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     padding: 16,
-    paddingTop: 40,
+    paddingTop: 48,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
+    borderBottomColor: "#E4E4E7",
   },
   profileButton: {
     flexDirection: "row",
@@ -202,51 +238,49 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   avatarSmall: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#6366F1",
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#18181B",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 8,
+    marginRight: 10,
   },
   avatarTextSmall: {
-    fontSize: 16,
-    fontWeight: "700",
+    fontSize: 14,
+    fontWeight: "600",
     color: "#FFFFFF",
   },
   profileName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#111827",
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#09090B",
   },
   authButtons: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 12,
     flex: 1,
   },
   authButton: {
-    paddingVertical: 8,
+    paddingVertical: 10,
     paddingHorizontal: 16,
-    borderRadius: 8,
+    borderRadius: 6,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "#E4E4E7",
+    backgroundColor: "#FFFFFF",
   },
   signUpButton: {
-    backgroundColor: "#6366F1",
-    borderColor: "#6366F1",
+    backgroundColor: "#18181B",
+    borderColor: "#18181B",
   },
   authButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#111827",
+    fontSize: 13,
+    fontWeight: "500",
+    color: "#09090B",
   },
   signUpButtonText: {
     color: "#FFFFFF",
-  },
-  historyButton: {
-    padding: 8,
   },
   content: {
     flex: 1,
@@ -254,52 +288,51 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   header: {
-    alignItems: "center",
-    marginBottom: 64,
+    alignItems: "flex-start",
+    marginBottom: 48,
   },
   title: {
-    fontSize: 48,
+    fontSize: 40,
     fontWeight: "700",
-    color: "#111827",
-    marginBottom: 16,
-    letterSpacing: -1,
+    color: "#09090B",
+    marginBottom: 12,
+    letterSpacing: -1.2,
   },
   subtitle: {
     fontSize: 16,
-    color: "#6B7280",
-    textAlign: "center",
+    color: "#71717A",
+    textAlign: "left",
     lineHeight: 24,
-    paddingHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 24,
   },
   warningBanner: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FEF3C7",
+    backgroundColor: "#FAFAFA",
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
-    marginTop: 8,
-    gap: 8,
+    borderWidth: 1,
+    borderColor: "#E4E4E7",
+    gap: 10,
   },
   warningText: {
-    fontSize: 14,
-    color: "#92400E",
-    fontWeight: "500",
+    fontSize: 13,
+    color: "#71717A",
+    fontWeight: "400",
   },
   buttonContainer: {
-    marginBottom: 32,
+    marginBottom: 40,
   },
   cameraButton: {
-    paddingVertical: 20,
-    borderRadius: 16,
+    // Styling is handled by PrimaryButton
   },
   footer: {
-    alignItems: "center",
+    alignItems: "flex-start",
   },
   footerText: {
-    fontSize: 14,
-    color: "#9CA3AF",
-    textAlign: "center",
+    fontSize: 13,
+    color: "#A1A1AA",
+    lineHeight: 20,
   },
 });

@@ -3,11 +3,11 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   Alert,
   ScrollView,
 } from 'react-native';
+import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
 import { Ionicons } from '@expo/vector-icons';
@@ -48,7 +48,7 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
 
   if (!user || !userData) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={["top"]}>
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
@@ -66,7 +66,7 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
@@ -78,7 +78,7 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
         <View style={styles.placeholder} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.profileSection}>
           <View style={styles.avatarContainer}>
             <View style={styles.avatar}>
@@ -95,7 +95,7 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.infoCard}>
             <View style={styles.infoRow}>
               <View style={styles.infoLabelContainer}>
-                <Ionicons name="person-outline" size={20} color="#6366F1" />
+                <Ionicons name="person-outline" size={18} color="#71717A" />
                 <Text style={styles.infoLabel}>Full Name</Text>
               </View>
               <Text style={styles.infoValue}>{userData.fullName}</Text>
@@ -105,7 +105,7 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.infoCard}>
             <View style={styles.infoRow}>
               <View style={styles.infoLabelContainer}>
-                <Ionicons name="mail-outline" size={20} color="#6366F1" />
+                <Ionicons name="mail-outline" size={18} color="#71717A" />
                 <Text style={styles.infoLabel}>Email</Text>
               </View>
               <Text style={styles.infoValue}>{userData.email}</Text>
@@ -115,7 +115,7 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.infoCard}>
             <View style={styles.infoRow}>
               <View style={styles.infoLabelContainer}>
-                <Ionicons name="call-outline" size={20} color="#6366F1" />
+                <Ionicons name="call-outline" size={18} color="#71717A" />
                 <Text style={styles.infoLabel}>Phone Number</Text>
               </View>
               <Text style={styles.infoValue}>{userData.phoneNumber}</Text>
@@ -124,11 +124,14 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
         </View>
 
         <View style={styles.actionsSection}>
-          <PrimaryButton
-            title="Sign Out"
+          <TouchableOpacity
+            style={styles.signOutButton}
             onPress={handleSignOut}
-            style={[styles.signOutButton, { backgroundColor: '#EF4444' }]}
-          />
+          >
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+              <Text style={{ color: '#EF4444', fontWeight: '600' }}>Sign Out</Text>
+            </View>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -138,17 +141,16 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 20,
-    paddingTop: 40,
-    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: '#E4E4E7',
   },
   backButton: {
     width: 40,
@@ -156,80 +158,81 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   title: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#111827',
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#09090B',
   },
   placeholder: {
     width: 40,
   },
   content: {
-    padding: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 32,
   },
   profileSection: {
     alignItems: 'center',
-    marginBottom: 32,
-    paddingBottom: 32,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    marginBottom: 40,
   },
   avatarContainer: {
-    marginBottom: 16,
+    marginBottom: 20,
   },
   avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#6366F1',
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: '#F4F4F5',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E4E4E7',
   },
   avatarText: {
-    fontSize: 40,
+    fontSize: 32,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#09090B',
   },
   name: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#111827',
-    marginBottom: 4,
+    color: '#09090B',
+    marginBottom: 6,
+    letterSpacing: -0.5,
   },
   email: {
-    fontSize: 16,
-    color: '#6B7280',
+    fontSize: 15,
+    color: '#71717A',
   },
   infoSection: {
-    marginBottom: 32,
+    marginBottom: 40,
+    gap: 12,
   },
   infoCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 8,
     padding: 16,
-    marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#E4E4E7',
   },
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 12,
   },
   infoLabelContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
+    gap: 12,
   },
   infoLabel: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-    marginLeft: 12,
+    fontWeight: '500',
+    color: '#71717A',
   },
   infoValue: {
     fontSize: 14,
-    color: '#111827',
-    fontWeight: '500',
+    color: '#09090B',
+    fontWeight: '600',
     flex: 1,
     textAlign: 'right',
   },
@@ -237,7 +240,11 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   signOutButton: {
-    backgroundColor: '#EF4444',
+    height: 52,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    backgroundColor: '#FEF2F2',
   },
   emptyContainer: {
     flex: 1,
@@ -247,7 +254,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#6B7280',
+    color: '#71717A',
   },
 });
 

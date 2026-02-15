@@ -74,7 +74,12 @@ export type RootStackParamList = {
   Onboarding: undefined;
   Camera: undefined;
   Preview: { imageUri: string };
-  Results: { data: AnalyzeResponse | SkinResult; imageUri?: string , fromHistory? : boolean };
+  Results: {
+    data: AnalyzeResponse | SkinResult;
+    imageUri?: string;
+    fromHistory?: boolean;
+    locationName?: string;
+  };
   History: undefined;
   Dashboard: undefined;
   Login: undefined;

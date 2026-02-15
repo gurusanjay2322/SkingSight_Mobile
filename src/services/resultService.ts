@@ -36,12 +36,14 @@ export const resultService = {
         Object.entries(result).filter(([_, v]) => v !== undefined)
       );
 
+      console.log("💾 Saving result to Firestore...", cleanResult);
+
       await addDoc(collection(db, "results"), {
         ...cleanResult,
         createdAt: serverTimestamp(),
       });
 
-      console.log("✅ Result saved successfully");
+      console.log("✅ Result saved successfully with ID:", cleanResult.id || 'new-doc');
     } catch (error) {
       console.error("❌ Failed to save result:", error);
       throw error;

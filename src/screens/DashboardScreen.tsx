@@ -4,13 +4,13 @@ import React, { useEffect, useState } from "react";
 import {
   Dimensions,
   RefreshControl,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../contexts/AuthContext";
 import { DashboardStats, resultService } from "../services/resultService";
 import { RootStackParamList } from "../types";
@@ -81,9 +81,9 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={["top"]}>
         <View style={styles.loadingContainer}>
-          <Ionicons name="analytics" size={48} color="#6366F1" />
+          <Ionicons name="analytics" size={48} color="#18181B" />
           <Text style={styles.loadingText}>Loading your progress...</Text>
         </View>
       </SafeAreaView>
@@ -93,13 +93,13 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
   const hasData = stats && stats.totalScans > 0;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#111827" />
+          <Ionicons name="arrow-back" size={20} color="#09090B" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Your Progress</Text>
+        <Text style={styles.headerTitle}>Progress Insights</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -108,22 +108,22 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#18181B" />
         }
       >
         {!hasData ? (
           /* Empty State */
           <View style={styles.emptyState}>
-            <Ionicons name="analytics-outline" size={80} color="#D1D5DB" />
-            <Text style={styles.emptyTitle}>No Data Yet</Text>
+            <Ionicons name="bar-chart-outline" size={64} color="#E4E4E7" />
+            <Text style={styles.emptyTitle}>Insights Pending</Text>
             <Text style={styles.emptySubtitle}>
-              Complete some skin analyses to see your progress trends here.
+              Your progress visualizations will appear here after your first analysis.
             </Text>
             <TouchableOpacity
               style={styles.startButton}
               onPress={() => navigation.navigate("Camera")}
             >
-              <Text style={styles.startButtonText}>Start Analysis</Text>
+              <Text style={styles.startButtonText}>Initial Scan</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -131,35 +131,35 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
             {/* Summary Cards */}
             <View style={styles.summaryRow}>
               <View style={styles.summaryCard}>
-                <Ionicons name="scan-outline" size={24} color="#6366F1" />
+                <Ionicons name="scan-outline" size={18} color="#71717A" />
                 <Text style={styles.summaryValue}>{stats.totalScans}</Text>
-                <Text style={styles.summaryLabel}>Total Scans</Text>
+                <Text style={styles.summaryLabel}>Scans</Text>
               </View>
               
               <View style={styles.summaryCard}>
                 <Ionicons 
-                  name="body-outline" 
-                  size={24} 
-                  color={CONDITION_COLORS[stats.mostCommonCondition.toLowerCase()] || "#6366F1"} 
+                  name="flask-outline" 
+                  size={18} 
+                  color="#71717A" 
                 />
                 <Text style={styles.summaryValue}>
                   {capitalizeFirst(stats.mostCommonCondition)}
                 </Text>
-                <Text style={styles.summaryLabel}>Most Common</Text>
+                <Text style={styles.summaryLabel}>Pattern</Text>
               </View>
               
               <View style={styles.summaryCard}>
-                <Ionicons name="calendar-outline" size={24} color="#10B981" />
-                <Text style={[styles.summaryValue, { fontSize: 14 }]}>
+                <Ionicons name="time-outline" size={18} color="#71717A" />
+                <Text style={[styles.summaryValue, { fontSize: 13 }]}>
                   {formatDate(stats.lastAnalyzedDate)}
                 </Text>
-                <Text style={styles.summaryLabel}>Last Scan</Text>
+                <Text style={styles.summaryLabel}>Latest</Text>
               </View>
             </View>
 
             {/* Risk Distribution */}
             <View style={styles.sectionCard}>
-              <Text style={styles.sectionTitle}>Risk Level Distribution</Text>
+              <Text style={styles.sectionTitle}>Risk Profile</Text>
               <View style={styles.riskDistribution}>
                 {Object.entries(stats.riskDistribution).map(([level, count]) => {
                   if (count === 0) return null;
@@ -196,28 +196,20 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
 
             {/* Condition Distribution */}
             <View style={styles.sectionCard}>
-              <Text style={styles.sectionTitle}>Skin Conditions Detected</Text>
+              <Text style={styles.sectionTitle}>Identified Conditions</Text>
               <View style={styles.conditionGrid}>
                 {Object.entries(stats.conditionDistribution).map(([condition, count]) => (
                   <View 
                     key={condition} 
-                    style={[
-                      styles.conditionChip,
-                      { borderColor: CONDITION_COLORS[condition.toLowerCase()] || "#6366F1" }
-                    ]}
+                    style={styles.conditionChip}
                   >
-                    <Text 
-                      style={[
-                        styles.conditionText,
-                        { color: CONDITION_COLORS[condition.toLowerCase()] || "#6366F1" }
-                      ]}
-                    >
+                    <Text style={styles.conditionText}>
                       {capitalizeFirst(condition)}
                     </Text>
                     <View 
                       style={[
                         styles.conditionCount,
-                        { backgroundColor: CONDITION_COLORS[condition.toLowerCase()] || "#6366F1" }
+                        { backgroundColor: CONDITION_COLORS[condition.toLowerCase()] || "#18181B" }
                       ]}
                     >
                       <Text style={styles.conditionCountText}>{count}</Text>
@@ -230,12 +222,10 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
             {/* Environmental Insights */}
             {Object.keys(stats.environmentalInsights.avgAqiByCondition).length > 0 && (
               <View style={styles.sectionCard}>
-                <Text style={styles.sectionTitle}>Environmental Insights</Text>
+                <Text style={styles.sectionTitle}>Context Correlation</Text>
                 
                 {/* AQI by Condition */}
-                <Text style={styles.insightSubtitle}>
-                  <Ionicons name="cloud" size={14} color="#6B7280" /> Average AQI by Condition
-                </Text>
+                <Text style={styles.insightSubtitle}>Avg. AQI exposure</Text>
                 <View style={styles.insightGrid}>
                   {Object.entries(stats.environmentalInsights.avgAqiByCondition).map(([condition, aqi]) => (
                     <View key={condition} style={styles.insightItem}>
@@ -250,9 +240,7 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
                 {/* UV by Risk Level */}
                 {Object.keys(stats.environmentalInsights.avgUvByRiskLevel).length > 0 && (
                   <>
-                    <Text style={[styles.insightSubtitle, { marginTop: 16 }]}>
-                      <Ionicons name="sunny" size={14} color="#6B7280" /> Average UV Index by Risk
-                    </Text>
+                    <Text style={[styles.insightSubtitle, { marginTop: 24 }]}>Avg. UV intensity</Text>
                     <View style={styles.insightGrid}>
                       {Object.entries(stats.environmentalInsights.avgUvByRiskLevel).map(([risk, uv]) => (
                         <View key={risk} style={styles.insightItem}>
@@ -270,7 +258,7 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
 
             {/* Average Confidence */}
             <View style={styles.sectionCard}>
-              <Text style={styles.sectionTitle}>Analysis Accuracy</Text>
+              <Text style={styles.sectionTitle}>System Confidence</Text>
               <View style={styles.confidenceContainer}>
                 <View style={styles.confidenceCircle}>
                   <Text style={styles.confidenceValue}>
@@ -278,10 +266,10 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
                   </Text>
                 </View>
                 <Text style={styles.confidenceLabel}>
-                  Average Confidence Score
+                  Avg. Analysis Reliability
                 </Text>
                 <Text style={styles.confidenceHint}>
-                  Higher scores indicate more reliable predictions
+                  Based on recent scan clarity and model correlation.
                 </Text>
               </View>
             </View>
@@ -289,14 +277,14 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
             {/* Recent Trend */}
             {stats.trendData.length > 1 && (
               <View style={styles.sectionCard}>
-                <Text style={styles.sectionTitle}>Recent Activity</Text>
+                <Text style={styles.sectionTitle}>Activity Log</Text>
                 <View style={styles.timeline}>
                   {stats.trendData.slice(-5).reverse().map((item, index) => (
                     <View key={index} style={styles.timelineItem}>
                       <View 
                         style={[
                           styles.timelineDot,
-                          { backgroundColor: CONDITION_COLORS[item.condition.toLowerCase()] || "#6366F1" }
+                          { backgroundColor: CONDITION_COLORS[item.condition.toLowerCase()] || "#18181B" }
                         ]} 
                       />
                       <View style={styles.timelineContent}>
@@ -323,149 +311,146 @@ export const DashboardScreen: React.FC<Props> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F9FAFB" },
+  container: { flex: 1, backgroundColor: "#FFFFFF" },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: 16,
-    backgroundColor: "#FFF",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
+    borderBottomColor: "#E4E4E7",
   },
-  headerTitle: { fontSize: 18, fontWeight: "700", color: "#111827" },
+  headerTitle: { fontSize: 16, fontWeight: "600", color: "#09090B" },
   scrollView: { flex: 1 },
-  scrollContent: { padding: 16, paddingBottom: 32 },
+  scrollContent: { padding: 20, paddingBottom: 40 },
   
-  // Loading & Empty States
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     gap: 16,
   },
-  loadingText: { fontSize: 16, color: "#6B7280" },
+  loadingText: { fontSize: 14, color: "#71717A", fontWeight: "500" },
+  
   emptyState: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     paddingVertical: 80,
   },
-  emptyTitle: { fontSize: 20, fontWeight: "700", color: "#111827", marginTop: 16 },
-  emptySubtitle: { fontSize: 14, color: "#6B7280", textAlign: "center", marginTop: 8, paddingHorizontal: 32 },
+  emptyTitle: { fontSize: 20, fontWeight: "700", color: "#09090B", marginTop: 16, letterSpacing: -0.5 },
+  emptySubtitle: { fontSize: 14, color: "#71717A", textAlign: "center", marginTop: 8, paddingHorizontal: 32, lineHeight: 20 },
   startButton: {
-    backgroundColor: "#6366F1",
+    backgroundColor: "#18181B",
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
     marginTop: 24,
   },
-  startButtonText: { color: "#FFF", fontWeight: "600", fontSize: 16 },
+  startButtonText: { color: "#FFF", fontWeight: "600", fontSize: 15 },
 
-  // Summary Cards
   summaryRow: {
     flexDirection: "row",
     gap: 12,
-    marginBottom: 16,
+    marginBottom: 24,
   },
   summaryCard: {
     flex: 1,
-    backgroundColor: "#FFF",
-    borderRadius: 12,
+    backgroundColor: "#FAFAFA",
+    borderRadius: 8,
     padding: 16,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    alignItems: "flex-start",
+    borderWidth: 1,
+    borderColor: "#E4E4E7",
   },
-  summaryValue: { fontSize: 20, fontWeight: "700", color: "#111827", marginTop: 8 },
-  summaryLabel: { fontSize: 11, color: "#6B7280", marginTop: 4, textAlign: "center" },
+  summaryValue: { fontSize: 18, fontWeight: "700", color: "#09090B", marginTop: 12, letterSpacing: -0.5 },
+  summaryLabel: { fontSize: 11, color: "#71717A", marginTop: 4, fontWeight: "500", textTransform: "uppercase" },
 
-  // Section Cards
   sectionCard: {
-    backgroundColor: "#FFF",
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 8,
+    padding: 20,
     marginBottom: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: "#E4E4E7",
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#111827",
-    marginBottom: 16,
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#09090B",
+    marginBottom: 20,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
 
-  // Risk Distribution
-  riskDistribution: { gap: 12 },
-  riskItem: { flexDirection: "row", alignItems: "center", gap: 8 },
-  riskLabelRow: { flexDirection: "row", alignItems: "center", width: 100, gap: 6 },
-  riskDot: { width: 10, height: 10, borderRadius: 5 },
-  riskLabel: { fontSize: 12, color: "#374151", flex: 1 },
-  riskCount: { fontSize: 12, color: "#6B7280", width: 20 },
-  riskBarContainer: { flex: 1, height: 8, backgroundColor: "#F3F4F6", borderRadius: 4 },
-  riskBar: { height: 8, borderRadius: 4 },
-  riskPercent: { fontSize: 12, color: "#6B7280", width: 35, textAlign: "right" },
+  riskDistribution: { gap: 16 },
+  riskItem: { flexDirection: "row", alignItems: "center", gap: 12 },
+  riskLabelRow: { flexDirection: "row", alignItems: "center", width: 80, gap: 8 },
+  riskDot: { width: 8, height: 8, borderRadius: 4 },
+  riskLabel: { fontSize: 13, color: "#27272A", flex: 1, fontWeight: "500" },
+  riskCount: { fontSize: 12, color: "#71717A", width: 20 },
+  riskBarContainer: { flex: 1, height: 6, backgroundColor: "#F4F4F5", borderRadius: 3, overflow: "hidden" },
+  riskBar: { height: 6, borderRadius: 3 },
+  riskPercent: { fontSize: 12, color: "#71717A", width: 35, textAlign: "right", fontWeight: "500" },
 
-  // Condition Distribution
-  conditionGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  conditionGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   conditionChip: {
     flexDirection: "row",
     alignItems: "center",
-    borderWidth: 1.5,
-    borderRadius: 20,
+    borderWidth: 1,
+    borderRadius: 6,
     paddingLeft: 12,
-    paddingRight: 4,
-    paddingVertical: 6,
-    gap: 8,
+    paddingRight: 6,
+    paddingVertical: 8,
+    gap: 10,
+    backgroundColor: "#FAFAFA",
+    borderColor: "#E4E4E7",
   },
-  conditionText: { fontSize: 13, fontWeight: "600" },
+  conditionText: { fontSize: 13, fontWeight: "600", color: "#27272A" },
   conditionCount: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    minWidth: 20,
+    height: 20,
+    borderRadius: 4,
     justifyContent: "center",
     alignItems: "center",
+    paddingHorizontal: 4,
   },
-  conditionCountText: { color: "#FFF", fontSize: 12, fontWeight: "700" },
+  conditionCountText: { color: "#FFF", fontSize: 11, fontWeight: "700" },
 
-  // Environmental Insights
-  insightSubtitle: { fontSize: 13, color: "#6B7280", marginBottom: 8 },
-  insightGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  insightItem: { flexDirection: "row", alignItems: "center", gap: 6 },
-  insightCondition: { fontSize: 12, color: "#374151" },
-  insightValueBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
-  insightValueText: { color: "#FFF", fontSize: 11, fontWeight: "600" },
+  insightSubtitle: { fontSize: 12, color: "#71717A", marginBottom: 12, fontWeight: "500", textTransform: "uppercase" },
+  insightGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
+  insightItem: { flexDirection: "row", alignItems: "center", gap: 8 },
+  insightCondition: { fontSize: 13, color: "#3F3F46" },
+  insightValueBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },
+  insightValueText: { color: "#FFF", fontSize: 11, fontWeight: "700" },
 
-  // Confidence
   confidenceContainer: { alignItems: "center", paddingVertical: 8 },
   confidenceCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: "#EEF2FF",
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: "#FAFAFA",
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 4,
-    borderColor: "#6366F1",
+    borderWidth: 1,
+    borderColor: "#E4E4E7",
   },
-  confidenceValue: { fontSize: 28, fontWeight: "700", color: "#6366F1" },
-  confidenceLabel: { fontSize: 14, fontWeight: "600", color: "#111827", marginTop: 12 },
-  confidenceHint: { fontSize: 12, color: "#6B7280", marginTop: 4 },
+  confidenceValue: { fontSize: 32, fontWeight: "700", color: "#09090B", letterSpacing: -1 },
+  confidenceLabel: { fontSize: 15, fontWeight: "600", color: "#09090B", marginTop: 16 },
+  confidenceHint: { fontSize: 13, color: "#71717A", marginTop: 4, textAlign: "center" },
 
-  // Timeline
-  timeline: { gap: 12 },
-  timelineItem: { flexDirection: "row", alignItems: "center", gap: 12 },
-  timelineDot: { width: 12, height: 12, borderRadius: 6 },
+  timeline: { gap: 16 },
+  timelineItem: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    gap: 12,
+    paddingVertical: 8,
+  },
+  timelineDot: { width: 8, height: 8, borderRadius: 4 },
   timelineContent: { flex: 1 },
-  timelineCondition: { fontSize: 14, fontWeight: "600", color: "#111827" },
-  timelineDate: { fontSize: 12, color: "#6B7280" },
-  timelineRisk: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
-  timelineRiskText: { color: "#FFF", fontSize: 11, fontWeight: "600" },
+  timelineCondition: { fontSize: 14, fontWeight: "600", color: "#09090B" },
+  timelineDate: { fontSize: 12, color: "#71717A", marginTop: 2 },
+  timelineRisk: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 4 },
+  timelineRiskText: { color: "#FFF", fontSize: 11, fontWeight: "700", textTransform: "uppercase" },
 });

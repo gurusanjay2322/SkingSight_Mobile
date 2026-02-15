@@ -1,6 +1,11 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import { AnalyzeResponse, ValidateSkinResponse } from '../types';
-const BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'https://contrariously-unvalidating-iliana.ngrok-free.dev/api';
+const BASE_URL = __DEV__
+  ? process.env.EXPO_PUBLIC_DEV_BACKEND_URL || 'https://sandwich-mean-relating-bucks.trycloudflare.com/api'
+  : process.env.EXPO_PUBLIC_PROD_BACKEND_URL || 'https://contrariously-unvalidating-iliana.ngrok-free.dev/api';
+console.log('🔌 API Service Initialized');
+console.log('Environment:', __DEV__ ? 'DEV' : 'PROD');
+console.log('BASE_URL:', BASE_URL);
 
 
 export enum ApiErrorType {

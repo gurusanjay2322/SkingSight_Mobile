@@ -48,32 +48,23 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: '#6366F1',
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 12,
+    backgroundColor: '#18181B', // zinc-900
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 8, // shadcn default-like radius
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 56,
-    shadowColor: '#6366F1',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    minHeight: 52,
   },
   buttonDisabled: {
-    backgroundColor: '#9CA3AF',
-    shadowOpacity: 0,
-    elevation: 0,
+    backgroundColor: '#F4F4F5', // zinc-100
+    borderWidth: 1,
+    borderColor: '#E4E4E7', // zinc-200
   },
   buttonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-    letterSpacing: 0.5,
+    fontSize: 14,
+    fontWeight: '500',
   },
 });
 

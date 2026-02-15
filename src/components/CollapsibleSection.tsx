@@ -11,10 +11,10 @@ import {
   View,
 } from "react-native";
 
-// Enable LayoutAnimation for Android
-if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
+// Header configuration for layout animations
+// if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
+//   UIManager.setLayoutAnimationEnabledExperimental(true);
+// }
 
 interface CollapsibleSectionProps {
   title: string;
@@ -63,13 +63,10 @@ export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#E4E4E7", // zinc-200
     overflow: "hidden",
   },
   header: {
@@ -77,26 +74,27 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     padding: 16,
-    backgroundColor: "#F9FAFB",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
+    backgroundColor: "#FAFAFA",
   },
   headerLeft: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 12,
   },
   iconContainer: {
-    width: 28,
-    height: 28,
+    width: 20,
+    height: 20,
     justifyContent: "center",
     alignItems: "center",
   },
   title: {
-    fontSize: 15,
-    fontWeight: "700",
+    fontSize: 14,
+    fontWeight: "600",
+    letterSpacing: -0.2,
   },
   content: {
     padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#E4E4E7",
   },
 });
