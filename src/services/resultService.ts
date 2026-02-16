@@ -29,21 +29,23 @@ export interface DashboardStats {
 }
 
 export const resultService = {
-  async saveResult(result: Omit<SkinResult, "createdAt">) {
+  async saveResult(result: any) {
     try {
       // 🔹 Remove undefined fields (Firestore hates them)
       const cleanResult = Object.fromEntries(
-        Object.entries(result).filter(([_, v]) => v !== undefined)
+        Object.entries(result).filter(([_, v]) => v !== undefined && v !== null)
       );
 
       console.log("💾 Saving result to Firestore...", cleanResult);
 
-      await addDoc(collection(db, "results"), {
+      const docRef = await addDoc(collection(db, "results"), {
         ...cleanResult,
+        timestamp: serverTimestamp(), // Use consistent naming 'timestamp'
         createdAt: serverTimestamp(),
       });
 
-      console.log("✅ Result saved successfully with ID:", cleanResult.id || 'new-doc');
+      console.log("✅ Result saved successfully with ID:", docRef.id);
+      return docRef;
     } catch (error) {
       console.error("❌ Failed to save result:", error);
       throw error;

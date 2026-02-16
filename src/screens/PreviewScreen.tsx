@@ -62,19 +62,6 @@ export const PreviewScreen: React.FC<Props> = ({ navigation, route }) => {
       setIsAnalyzing(true);
       const response = await apiService.analyzeSkin(imageUri, lat, lon);
 
-      if (user) {
-        const historyItem = {
-          id: Date.now().toString(),
-          timestamp: Date.now(),
-          predicted_class: response.predicted_class,
-          risk_level: response.risk_level,
-          confidence: response.confidence,
-          imageUri: imageUri,
-          data: response,
-        };
-        await storageService.saveHistoryItem(historyItem, user.uid);
-      }
-
       navigation.navigate('Results', { 
         data: response, 
         imageUri,
